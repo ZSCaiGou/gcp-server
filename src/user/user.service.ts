@@ -37,6 +37,9 @@ export class UserService {
             user.password = await bycypt.hash(createUserDto.password, salt);
             // 保存用户对象到数据库
             await this.userRepostory.save(user);
+
+            // #TODO: 初始化用户相关的其他表数据
+            
             // 提交事务
             await runner.commitTransaction();
         } catch (error) {

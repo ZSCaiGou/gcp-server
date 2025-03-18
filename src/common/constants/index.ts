@@ -3,3 +3,6 @@ export const MessageConstant = {
     USER_NOT_EXIST: '用户不存在',
     SUCCESS: '成功'
 }
+
+
+export const IS_PUBLIC_KEY = 'isPublic'

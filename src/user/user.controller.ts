@@ -21,6 +21,7 @@ import { Request, Response } from 'express';
 import { AuthService } from 'src/auth/auth.service';
 import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
+import { Public } from 'src/common/decorator/public.decorator';
 
 @Controller('user')
 export class UserController {
@@ -31,6 +32,7 @@ export class UserController {
     ) {}
 
     @Post('login')
+    @Public()
     async login(@Body() loginUserDto: LoginUserDto, @Res() res: Response) {
         const result = await this.authService.validateUser(loginUserDto);
 
