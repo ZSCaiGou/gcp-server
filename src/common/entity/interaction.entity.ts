@@ -4,6 +4,7 @@ export enum TargetType {
     TOPIC = 'topic',
     COMMENT = 'comment',
     CONTENT = 'content',
+    GAME = 'game',
 }
 /**
  *  互动类型
@@ -12,18 +13,20 @@ export enum TargetType {
  *  @property {string} DISLIKE - 踩
  *  @property {string} SHARE - 分享
  *  @property {string} COLLECT - 收藏
+ *  @property {string} FOLLOW - 关注
  */
 export enum InteractionType {
     LIKE = 'like',
     DISLIKE = 'dislike',
     SHARE = 'share',
     COLLECT = 'collect',
+    FOLLOW = 'follow',
 }
 
 @Entity({
     comment: '互动记录',
 })
-export class Interactions {
+export class Interaction {
     @PrimaryColumn({
         type: 'bigint',
         generated: true,

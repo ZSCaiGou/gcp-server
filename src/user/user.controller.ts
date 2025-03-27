@@ -12,6 +12,7 @@ import {
     HttpCode,
     HttpStatus,
     Res,
+    Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -22,8 +23,12 @@ import { AuthService } from 'src/auth/auth.service';
 import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
 import { Public } from 'src/common/decorator/public.decorator';
+import { ApiHeader } from '@nestjs/swagger';
 
 @Controller('user')
+@ApiHeader({
+    name: 'authorization',
+})
 export class UserController {
     private readonly logger = new Logger(UserController.name);
     constructor(
@@ -39,22 +44,29 @@ export class UserController {
         res.status(result.StatuCode).send(result);
     }
 
-    @Post('create')
-    async create(@Body() createUserDto: CreateUserDto) {
-        return await this.userService.create(createUserDto);
-    }
+    // @Post('create')
+    // @Public()
+    // async create(@Body() createUserDto: CreateUserDto) {
+    //     return await this.userService.create(createUserDto);
+    // }
 
-    @Get()
+    @Get('all')
+    @Public()
     findAll() {
-        return this.userService.findAll();
+        return 'This action returns all users';
     }
 
-    @Get(':id')
-    async findOne(@Param('id') id: string, @Res() res: Response) {
-        const data = await this.userService.findOne(id);
+    @Get('getVerifyCode')
+    @Public()
+    async getVerifyCode(@Query('phone') phone: string, @Res() res: Response) {
+        const result = await this.authService.getVerifyCode(phone);
+        res.status(result.StatuCode).send(result);
+    }
 
-        const result = Result.success(MessageConstant.SUCCESS, data);
-
+    @Get('userdata')
+    async getUserData(@Req() req: Request, @Res() res: Response) {
+        const userId = req['user'].id as string;
+        const result = await this.userService.getUserData(userId);
         res.status(result.StatuCode).send(result);
     }
 

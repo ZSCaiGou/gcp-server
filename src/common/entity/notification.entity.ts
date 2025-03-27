@@ -9,7 +9,7 @@ export enum NotificationType {
 @Entity({
     comment: '通知表',
 })
-export class Notifications {
+export class Notification {
     @PrimaryColumn({
         comment: '主键',
         generated: true,

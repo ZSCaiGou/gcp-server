@@ -16,7 +16,7 @@ export enum FeedbackStatus {
 @Entity({
     comment: '反馈表',
 })
-export class Feedbacks {
+export class Feedback {
     @PrimaryColumn({
         type:'bigint',
         generated: true,

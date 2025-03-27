@@ -3,7 +3,7 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity({
     comment: '话题表',
 })
-export class Topics {
+export class Topic {
     @PrimaryGeneratedColumn()
     id: number;
 

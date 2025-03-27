@@ -1,20 +1,37 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum PrivacyLevel {
     PUBLIC = 'public',
     PRIVATE = 'private',
     friends = 'friends',
 }
+export interface Bio{
+    // 性别
+    sex:string,
+    // 生日
+    birthday:{
+        year:number,
+        month:number,
+        day:number
+    },
+    //地址
+    address:{
+        contry:string,
+        city:string,
+        district:string,
+    },
+    // 个性签名
+    signature:string,
+    
+}
 @Entity({
     comment: '用户资料',
 })
-export class UserProfiles {
-    @PrimaryColumn({
-        type: 'char',
-        length: 36,
-        comment: '用户',
+export class UserProfile {
+    @PrimaryGeneratedColumn({
+        type: 'bigint',
     })
-    user_id: string;
+    id: number;
 
     @Column({
         type: 'varchar',
@@ -27,13 +44,15 @@ export class UserProfiles {
         type: 'varchar',
         length: 255,
         comment: '昵称',
+        default: '',
     })
     nickname: string;
     @Column({
-        type: 'text',
+        type: 'json',
         comment: '个人简介',
+        default: null,
     })
-    bio: string;
+    bio: Bio;
     @Column({
         type: 'enum',
         enum: PrivacyLevel,

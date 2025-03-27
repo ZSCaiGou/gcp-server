@@ -14,7 +14,7 @@ export enum CommentStatus {
 @Entity({
     comment: '评论表',
 })
-export class Comments {
+export class Comment {
     @PrimaryColumn({
         type: 'bigint',
         generated: true,
@@ -52,8 +52,7 @@ export class Comments {
     @Column({
         type: 'enum',
         enum: CommentType,
-        comment: '评论类型'
-
+        comment: '评论类型',
     })
     type: CommentType;
 

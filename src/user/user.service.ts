@@ -1,80 +1,135 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+    BadRequestException,
+    HttpStatus,
+    Inject,
+    Injectable,
+    Logger,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DataSource, Repository } from 'typeorm';
-import { User } from 'src/common/entity/user.entity';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import { User, UserStatus } from 'src/common/entity/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import bycypt from 'bcrypt';
 import { LoginType } from './dto/login-user.dto';
+import { Result } from 'src/common/result/Result';
+import { DEFAULT_AVATAR_URL, MessageConstant } from 'src/common/constants';
+import { JwtService } from '@nestjs/jwt';
+import { UserContent } from 'src/common/entity/user_content.entity';
+import { randomUUID } from 'crypto';
+import { Role } from 'src/common/entity/role.entity';
+import { UserProfile } from 'src/common/entity/user_profile.entity';
+import { UserLevel } from 'src/common/entity/user_level.entity';
+
 @Injectable()
 export class UserService {
-
     private readonly logger = new Logger(UserService.name);
-
-    constructor(
-        private dataSource: DataSource,
-        @InjectRepository(User) private userRepostory: Repository<User>,
-    ) {}
+    private manager: EntityManager;
+    constructor(private dataSource: DataSource) {
+        this.manager = this.dataSource.manager;
+    }
     /**
      * 创建用户
-     * @param createUserDto  用户信息
-     * @returns
+     * @param   用户信息
+     * @returns  用户对象
      */
-    async create(createUserDto: CreateUserDto) {
-        // 创建一个事务
-        const runner = this.dataSource.createQueryRunner();
-        await runner.connect();
-        await runner.startTransaction();
-        // 开始事务
-        try {
-            // 创建一个用户对象
-            const user = new User();
-            // 将dto中的数据合并到用户对象中
-            this.userRepostory.merge(user, createUserDto);
-            user.last_login_time = new Date();
-            // 加密密码
-            const salt = await bycypt.genSalt();
-            user.password = await bycypt.hash(createUserDto.password, salt);
-            // 保存用户对象到数据库
-            await this.userRepostory.save(user);
+    async create(phone: string): Promise<User> {
+        // 创建一个用户对象
+        const user = this.manager.create(User, { phone });
+        // 通过手机号生成一个默认的用户名,将中间四位替换成*
+        user.username =
+            'user_' + phone.substring(0, 3) + '****' + phone.substring(7, 11);
 
-            // #TODO: 初始化用户相关的其他表数据
-            
-            // 提交事务
-            await runner.commitTransaction();
-        } catch (error) {
-            // 回滚事务
-            await runner.rollbackTransaction();
-            // #TODO: 添加日志记录和错误处理
-            throw error;
-        } finally {
-            await runner.release();
+        // 使用uuid生成一个默认密码
+        const ps = randomUUID();
+
+        // 加密密码
+        const salt = await bycypt.genSalt();
+        user.password = await bycypt.hash(ps, salt);
+        user.last_login_time = new Date();
+
+        // 初始化用户角色
+        const role = await this.manager.findOneBy(Role, { role_name: 'USER' });
+        if (!role) {
+            throw new BadRequestException('内部错误');
         }
-        // TODO: 返回一个用户成功登录TOKEN
-        return 'This action adds a new user';
-    }
+        user.roles = [role];
 
-    findAll() {
-        return `This action returns all user`;
-    }
-
-    async findOne(id: string) {
-        const user = await this.userRepostory.findOneBy({
-            id,
+        // 初始化用户资料
+        const userProfle = this.manager.create(UserProfile, {
+            avatar_url: DEFAULT_AVATAR_URL,
         });
-        this.logger.log('uuid', id)
-        this.logger.log('user', user)
-        return {
-            user
-        };
+        user.profile = userProfle;
+
+        // 初始化用户等级
+        const userLevel = this.manager.create(UserLevel, {});
+        user.level = userLevel;
+
+        // 保存用户对象到数据库
+        const resultUser = await this.manager.save(user);
+
+        // #TODO: 添加日志记录和错误处理
+
+        // 返回用户
+        return resultUser;
     }
 
+    /**
+     * 登录
+     * @param   用户名、邮箱、手机号、密码
+     * @returns  用户对象
+     */
     async findOneByType(value: string, type: LoginType) {
         // 根据用户名、邮箱、手机号查找用户
-        const user = await this.userRepostory.findOneBy({
+        const user = await this.manager.findOneBy(User, {
             [type]: value,
         });
         return user;
+    }
+
+    /**
+     *  获取用户信息
+     */
+    async getUserData(userId: string) {
+        if (!userId) {
+            return Result.error(
+                MessageConstant.ILLEGAL_VALUE,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        const user = await this.manager.findOneBy(User, { id: userId });
+        // 用户不存在
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 禁用用户不能登录
+        if (user.status === UserStatus.DISABLED) {
+            return Result.error(
+                MessageConstant.USER_DISABLED,
+                HttpStatus.FORBIDDEN,
+                null,
+            );
+        }
+        // 返回的数据
+        const data = {
+            id: user.id,
+            username: user.username,
+            phone:
+                user.phone.substring(0, 3) +
+                '****' +
+                user.phone.substring(7, 11),
+            email: user.email,
+            profile: user.profile,
+            level: user.level,
+            roles: user.roles.map((role) => role.role_name),
+        };
+
+        return Result.success(MessageConstant.SUCCESS, data);
     }
 
     update(id: number, updateUserDto: UpdateUserDto) {

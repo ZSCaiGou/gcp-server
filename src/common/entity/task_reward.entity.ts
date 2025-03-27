@@ -18,7 +18,7 @@ export enum TaskStatus {
 @Entity({
     comment:'任务奖励'
 })
-export class TaskRewards {
+export class TaskReward {
 
     @PrimaryColumn({
         type: "bigint",

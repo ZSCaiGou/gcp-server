@@ -2,6 +2,7 @@ import {
     CanActivate,
     ExecutionContext,
     Injectable,
+    Logger,
     UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +14,7 @@ import { IS_PUBLIC_KEY } from '../constants';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+    private readonly logger = new Logger(AuthGuard.name);
     constructor(
         private jwtService: JwtService,
         private configService: ConfigService,
@@ -22,14 +24,17 @@ export class AuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         // 获取请求对象
         const req = context.switchToHttp().getRequest<Request>();
+
+        this.logger.log("Path:" + req.path)
         // 获取token
         const token = this.extractTokenFromHeader(req);
-
+        
         // 获取是否为公开路由
         const isPublic = this.reflector.get(
             IS_PUBLIC_KEY,
             context.getHandler(),
         );
+
         // 如果为公开路由，则直接返回true
         if (isPublic) {
             return true;
@@ -43,17 +48,17 @@ export class AuthGuard implements CanActivate {
             const payload = await this.jwtService.verifyAsync(token, {
                 secret: this.configService.get<string>('JWT_SECRET'),
             });
-
-            req.user = payload;
-        } catch {
-            throw new UnauthorizedException();
+            req['user'] = payload;
+        } catch (err) {
+            throw err;
         }
         return true;
     }
 
     private extractTokenFromHeader(req: Request) {
+        const authorization = req.headers.authorization as string;
         // 从header中提取token
-        const [type, token] = req.headers.authorization?.split(' ') ?? [];
-        return token === 'Bearer' ? token : undefined;
+        const [type, token] = authorization?.split(' ') ?? [];
+        return type === 'Bearer' ? token : undefined;
     }
 }

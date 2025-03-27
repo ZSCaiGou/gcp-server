@@ -5,6 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigKey } from './common/constants';
+import { CaslModule } from './casl/casl.module';
+import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
+import { PermissionModule } from './permission/permission.module';
+
+import { OssUtilService } from './utils/oss-util/oss-util.service';
 
 @Module({
     imports: [
@@ -12,13 +18,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             imports: [ConfigModule],
             useFactory: (configService: ConfigService) => ({
                 type: 'mysql',
-                host: configService.get<string>('DB_HOST'),
-                port: configService.get<number>('DB_PORT'),
-                username: configService.get<string>('DB_USER'),
-                password: configService.get<string>('DB_PASSWORD'),
-                database: configService.get<string>('DB_NAME'),
+                host: configService.get<string>(ConfigKey.DB_HOST),
+                port: configService.get<number>(ConfigKey.DB_PORT),
+                username: configService.get<string>(ConfigKey.DB_USER),
+                password: configService.get<string>(ConfigKey.DB_PASSWORD),
+                database: configService.get<string>(ConfigKey.DB_DATABASE),
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                synchronize: configService.get<boolean>('DB_SYNC'),
+                synchronize: configService.get<boolean>(ConfigKey.DB_SYNC),
+            }),
+            inject: [ConfigService],
+        }),
+        RedisModule.forRootAsync({
+            imports: [ConfigModule],
+            useFactory: (configService: ConfigService) => ({
+                type: 'single',
+                url: configService.get<string>(ConfigKey.REDIS_URL),
             }),
             inject: [ConfigService],
         }),
@@ -27,8 +41,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         }),
         UserModule,
         AuthModule,
+        CaslModule,
+        PermissionModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, OssUtilService],
 })
 export class AppModule {}

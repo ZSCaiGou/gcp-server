@@ -1,4 +1,17 @@
-import { Column, Entity, Generated, PrimaryColumn } from 'typeorm';
+import {
+    Column,
+    Entity,
+    Generated,
+    JoinColumn,
+    JoinTable,
+    ManyToMany,
+    OneToOne,
+    PrimaryColumn,
+} from 'typeorm';
+import { Role } from './role.entity';
+import { Permission } from './permission.entity';
+import { UserProfile } from './user_profile.entity';
+import { UserLevel } from './user_level.entity';
 
 export enum UserStatus {
     ACTIVE = 'active',
@@ -28,8 +41,8 @@ export class User {
     @Column({
         type: 'varchar',
         length: 50,
-        unique: true,
         comment: '邮箱',
+        default: null,
     })
     email: string;
 
@@ -74,5 +87,33 @@ export class User {
         default: UserStatus.ACTIVE,
         comment: '用户状态',
     })
-    status:UserStatus ;
+    status: UserStatus;
+
+    // 用户角色
+    @ManyToMany(() => Role,{eager:true})
+    @JoinTable()
+    roles: Role[];
+
+    // 用户权限
+    @ManyToMany(() => Permission,{
+        eager:true
+    })
+    @JoinTable()
+    permissions:Permission[]
+
+    // 用户资料
+    @OneToOne(() => UserProfile, {
+        eager:true,
+        cascade:true
+    })
+    @JoinColumn()
+    profile:UserProfile
+
+    // 用户等级
+    @OneToOne(() => UserLevel, {
+        eager:true,
+        cascade:true
+    })
+    @JoinColumn()
+    level:UserLevel
 }

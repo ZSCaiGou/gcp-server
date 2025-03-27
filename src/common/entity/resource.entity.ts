@@ -30,7 +30,7 @@ export enum ResourceType {
 @Entity({
     comment: '资源表',
 })
-export class Resources {
+export class Resource {
     @PrimaryColumn({
         type: 'bigint',
         generated: true,

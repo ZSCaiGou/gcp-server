@@ -1,16 +1,19 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 /**
  * 用户内容类型枚举
  * @enum {string}
- * @property {string} GUIDE 指南
- * @property {string} EXPRIENCE 心得
+ * @property {string} GUIDE 攻略
  * @property {string} RESOURCE 资源
+ * @property {string} NEWS 新闻资讯
+ * @property {string} POST 帖子
+ *
  */
-export enum ContentType{
+export enum UserContentType {
     GUIDE = 'guide',
-    EXPRIENCE = 'experience',
-    RESOURCE = 'resource'
+    RESOURCE = 'resource',
+    NEWS = 'news',
+    POST = 'post',
 }
 /**
  * 评论状态枚举
@@ -21,67 +24,75 @@ export enum ContentType{
  * @property {string} HIDDEN 隐藏
  * @property {string} DELETED 已删除
  */
-export enum ContentStatus{
+export enum ContentStatus {
     PENDING = 'pending',
     APPROVED = 'approved',
-    REJECTED ='rejected',
+    REJECTED = 'rejected',
     HIDDEN = 'hidden',
-    DELETED = 'deleted'
+    DELETED = 'deleted',
 }
 @Entity({
-    comment: '用户内容'
+    comment: '用户内容',
 })
 export class UserContent {
     @PrimaryColumn({
-        comment: '评论ID',
-        type: 'int',
+        comment: 'ID',
+        type: 'bigint',
         generated: true,
     })
-    id:number;
+    id: bigint;
     @Column({
         comment: '用户ID',
         type: 'varchar',
         length: 32,
     })
-    user_id:string;
+    user_id: string;
     @Column({
         comment: '游戏ID',
         type: 'int',
     })
-    game_id:number;
+    game_id: number;
     @Column({
         comment: '用户内容类型',
         type: 'enum',
-        enum: ContentType,
+        enum: UserContentType,
     })
-    type:ContentType;
+    type: UserContentType;
     @Column({
         comment: '用户内容标题',
         type: 'varchar',
         length: 128,
     })
-    title:string;
+    title: string;
     @Column({
         comment: '用户内容内容',
         type: 'text',
     })
-    content:string;
+    content: string;
+
     @Column({
-        comment:'用户内容',
-        type: 'text',
+        comment: '用户内容封面',
+        type: 'json',
     })
-    status:ContentStatus;
+    cover_url: string[];
+    @Column({
+        comment: '用户内容状态',
+        type: 'enum',
+        enum: ContentStatus,
+        default: ContentStatus.PENDING,
+    })
+    status: ContentStatus;
     @Column({
         comment: '创建时间',
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP',
     })
-    create_time:Date;
+    create_time: Date;
     @Column({
         comment: '更新时间',
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP',
         onUpdate: 'CURRENT_TIMESTAMP',
     })
-    update_time:Date;
+    update_time: Date;
 }

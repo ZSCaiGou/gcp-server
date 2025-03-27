@@ -3,7 +3,7 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 @Entity({
     comment: '多重身份验证设置',
 })
-export class MfaSettings {
+export class MfaSetting {
     @PrimaryColumn({
         comment: '用户ID',
         type: 'varchar',
