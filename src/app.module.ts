@@ -11,6 +11,9 @@ import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
 import { PermissionModule } from './permission/permission.module';
 
 import { OssUtilService } from './utils/oss-util/oss-util.service';
+import { OssUtilModule } from './utils/oss-util/oss-util.module';
+import { GameModule } from './game/game.module';
+import { TopicModule } from './topic/topic.module';
 
 @Module({
     imports: [
@@ -43,8 +46,11 @@ import { OssUtilService } from './utils/oss-util/oss-util.service';
         AuthModule,
         CaslModule,
         PermissionModule,
+        OssUtilModule,
+        GameModule,
+        TopicModule,
     ],
     controllers: [AppController],
-    providers: [AppService, OssUtilService],
+    providers: [AppService],
 })
 export class AppModule {}

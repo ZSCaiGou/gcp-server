@@ -41,17 +41,20 @@ export class UserContent {
         generated: true,
     })
     id: bigint;
+    
     @Column({
         comment: '用户ID',
         type: 'varchar',
         length: 32,
     })
     user_id: string;
+
     @Column({
         comment: '游戏ID',
         type: 'int',
     })
     game_id: number;
+
     @Column({
         comment: '用户内容类型',
         type: 'enum',
@@ -64,6 +67,7 @@ export class UserContent {
         length: 128,
     })
     title: string;
+
     @Column({
         comment: '用户内容内容',
         type: 'text',
@@ -75,6 +79,7 @@ export class UserContent {
         type: 'json',
     })
     cover_url: string[];
+
     @Column({
         comment: '用户内容状态',
         type: 'enum',
@@ -82,12 +87,14 @@ export class UserContent {
         default: ContentStatus.PENDING,
     })
     status: ContentStatus;
+
     @Column({
         comment: '创建时间',
         type: 'timestamp',
         default: () => 'CURRENT_TIMESTAMP',
     })
     create_time: Date;
+
     @Column({
         comment: '更新时间',
         type: 'timestamp',

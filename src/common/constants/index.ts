@@ -24,6 +24,10 @@ export const MessageConstant = {
     USER_DISABLED: '用户被禁用',
     USER_ALREADY_EXIST: '用户已存在',
     USER_NOT_LOGIN: '用户未登录',
+    USERNAME_ALREADY_EXIST: '用户名已存在',
+    EMAIL_ALREADY_EXIST: '邮箱已存在',
+    PHONE_ALREADY_EXIST: '手机号已存在',
+    VERIFY_CODE_SEND_SUCCESS: '验证码发送成功',
 };
 
 export enum AbilityAction {

@@ -13,6 +13,9 @@ import {
     HttpStatus,
     Res,
     Query,
+    Put,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,6 +27,8 @@ import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
 import { Public } from 'src/common/decorator/public.decorator';
 import { ApiHeader } from '@nestjs/swagger';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('user')
 @ApiHeader({
@@ -70,13 +75,37 @@ export class UserController {
         res.status(result.StatuCode).send(result);
     }
 
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-        return this.userService.update(+id, updateUserDto);
+    @Put('userprofile')
+    async updateUserProfile(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body() updateUserProfileDto: UpdateUserProfileDto,
+    ) {
+        const userId = req['user'].id as string;
+        const result = await this.userService.updateUserProfile(
+            userId,
+            updateUserProfileDto,
+        );
+        res.status(result.StatuCode).send(result);
     }
 
-    @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.userService.remove(+id);
+    @Post('useravatar')
+    @UseInterceptors(FileInterceptor('avatar'))
+    async updateUserAvatar(
+        @Req() req: Request,
+        @Res() res: Response,
+        @UploadedFile() avatar: Express.Multer.File,
+    ) {
+        const userId = req['user'].id as string;
+
+        const result = await this.userService.updateUserAvatar(userId, avatar);
+        res.status(result.StatuCode).send(result);
+    }
+
+    @Get("dynamic")
+    async getUserDynamic(@Req() req: Request, @Res() res: Response) {
+        const userId = req['user'].id as string;
+        const result = await this.userService.getUserDynamic(userId);
+        res.status(result.StatuCode).send(result);
     }
 }

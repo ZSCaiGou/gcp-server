@@ -1,3 +1,4 @@
+import { OssUtilService } from './../utils/oss-util/oss-util.service';
 import {
     BadRequestException,
     HttpStatus,
@@ -15,17 +16,24 @@ import { LoginType } from './dto/login-user.dto';
 import { Result } from 'src/common/result/Result';
 import { DEFAULT_AVATAR_URL, MessageConstant } from 'src/common/constants';
 import { JwtService } from '@nestjs/jwt';
-import { UserContent } from 'src/common/entity/user_content.entity';
+import {
+    UserContent,
+    UserContentType,
+} from 'src/common/entity/user_content.entity';
 import { randomUUID } from 'crypto';
 import { Role } from 'src/common/entity/role.entity';
 import { UserProfile } from 'src/common/entity/user_profile.entity';
 import { UserLevel } from 'src/common/entity/user_level.entity';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
 export class UserService {
     private readonly logger = new Logger(UserService.name);
     private manager: EntityManager;
-    constructor(private dataSource: DataSource) {
+    constructor(
+        private dataSource: DataSource,
+        private readonly OssUtilService: OssUtilService,
+    ) {
         this.manager = this.dataSource.manager;
     }
     /**
@@ -132,11 +140,91 @@ export class UserService {
         return Result.success(MessageConstant.SUCCESS, data);
     }
 
-    update(id: number, updateUserDto: UpdateUserDto) {
-        return `This action updates a #${id} user`;
-    }
+    async updateUserProfile(
+        userId: string,
+        updateUserProfileDto: UpdateUserProfileDto,
+    ) {
+        const { username, email, nickname, signature } = updateUserProfileDto;
+        const user = await this.manager.findOneBy(User, { id: userId });
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 修改用户名
+        if (username && username !== user.username) {
+            const count = await this.manager.countBy(User, { username });
+            if (count > 0) {
+                return Result.error(
+                    MessageConstant.USERNAME_ALREADY_EXIST,
+                    HttpStatus.BAD_REQUEST,
+                    null,
+                );
+            }
+            user.username = username;
+        }
+        // 修改邮箱
+        if (email && email !== user.email) {
+            const count = await this.manager.countBy(User, { email });
+            if (count > 0) {
+                return Result.error(
+                    MessageConstant.EMAIL_ALREADY_EXIST,
+                    HttpStatus.BAD_REQUEST,
+                    null,
+                );
+            }
+            user.email = email;
+        }
+        // 修改昵称
+        if (user.profile.nickname !== nickname && nickname) {
+            user.profile.nickname = nickname;
+        }
+        // 用户的个性签名
+        if (!user.profile.bio) {
+            user.profile.bio = {
+                signature: signature,
+                sex: '',
+                birthday: {
+                    year: 0,
+                    month: 0,
+                    day: 0,
+                },
+                address: {
+                    contry: '',
+                    city: '',
+                    district: '',
+                },
+            };
+        } else {
+            user.profile.bio.signature = signature;
+        }
 
-    remove(id: number) {
-        return `This action removes a #${id} user`;
+        await this.manager.save(user);
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+    // 修改用户头像
+    async updateUserAvatar(useId: string, avatar: Express.Multer.File) {
+        const user = await this.manager.findOneBy(User, { id: useId });
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        const avatarName = randomUUID() + '.' + avatar.mimetype.split('/')[1];
+        const ossUrl = await this.OssUtilService.upload(avatar, avatarName);
+        user.profile.avatar_url = ossUrl;
+        await this.manager.save(user);
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+    async getUserDynamic(userId: string) {
+        const userContent = await this.manager.findBy(UserContent, {
+            user_id: userId,
+            type: UserContentType.POST,
+        });
+        return Result.success(MessageConstant.SUCCESS, userContent);
     }
 }

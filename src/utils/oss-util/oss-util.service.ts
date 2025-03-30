@@ -22,14 +22,15 @@ export class OssUtilService {
             });
         }
     }
-
-    async test() {
-        try {
-            const result = await this.ossClient.get("one.jpeg");
-            console.log(result);
-        } catch (err) {
-            console.log(err);
+    async upload(file: Express.Multer.File, fileName: string) {
+        if (!this.ossClient) {
+            throw new Error('oss client not init');
         }
-        
+        const result = await this.ossClient.put(
+            'avatar/' + fileName,
+            file.buffer,
+        );
+        return result.url;
     }
+
 }

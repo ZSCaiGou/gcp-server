@@ -27,9 +27,16 @@ export class Game {
         type: 'json',
     })
     category: string[];
+
     @Column({
         comment: '游戏标签',
         type: 'json',
     })
     tags: JSON;
+
+    @Column({
+        comment: '游戏封面',
+        type: 'varchar',
+    })
+    gameImg: string;
 }
