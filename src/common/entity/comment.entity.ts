@@ -1,9 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn } from 'typeorm';
 
-export enum CommentType {
-    USERCONTENT = 'usercontent',
-    TOPIC = 'topic',
-}
+
 
 export enum CommentStatus {
     NORMAL = 'normal',
@@ -50,11 +47,10 @@ export class Comment {
     status: CommentStatus;
 
     @Column({
-        type: 'enum',
-        enum: CommentType,
-        comment: '评论类型',
+        type: 'bigint',
+        comment: '目标内容ID',
     })
-    type: CommentType;
+    target_content_id:bigint;
 
     @Column({
         type: 'timestamp',

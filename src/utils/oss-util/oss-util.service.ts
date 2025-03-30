@@ -22,7 +22,7 @@ export class OssUtilService {
             });
         }
     }
-    async upload(file: Express.Multer.File, fileName: string) {
+    async uploadAvatar(file: Express.Multer.File, fileName: string) {
         if (!this.ossClient) {
             throw new Error('oss client not init');
         }
@@ -33,4 +33,36 @@ export class OssUtilService {
         return result.url;
     }
 
+    async uploadUserContentCover(file: Express.Multer.File, fileName: string) {
+        if (!this.ossClient) {
+            throw new Error('oss client not init');
+        }
+        const result = await this.ossClient.put(
+            'user-content-cover/' + fileName,
+            file.buffer,
+        );
+        return result.url;
+    }
+
+    async uploadUserContentPicture(
+        file: Express.Multer.File,
+        fileName: string,
+    ) {
+        if (!this.ossClient) {
+            throw new Error('oss client not init');
+        }
+        const result = await this.ossClient.put(
+            'user-content-picture/' + fileName,
+            file.buffer,
+        );
+        return result.url;
+    }
+
+    async deleteUserContentPicture(pictureUrl: string) {
+        if (!this.ossClient) {
+            throw new Error('oss client not init');
+        }
+        const result = await this.ossClient.delete(pictureUrl);
+        return result;
+    }
 }

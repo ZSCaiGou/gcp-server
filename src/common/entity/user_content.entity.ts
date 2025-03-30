@@ -1,4 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Game } from './game.entity';
+import { Topic } from './topic.entity';
 
 /**
  * 用户内容类型枚举
@@ -30,6 +32,7 @@ export enum ContentStatus {
     REJECTED = 'rejected',
     HIDDEN = 'hidden',
     DELETED = 'deleted',
+    DRAFT = 'draft',
 }
 @Entity({
     comment: '用户内容',
@@ -41,19 +44,27 @@ export class UserContent {
         generated: true,
     })
     id: bigint;
-    
+
     @Column({
         comment: '用户ID',
         type: 'varchar',
-        length: 32,
+        length: 36,
     })
     user_id: string;
 
     @Column({
         comment: '游戏ID',
-        type: 'int',
+        type: 'json',
+        default: null,
     })
-    game_id: number;
+    game_ids: string[];
+
+    @Column({
+        comment: '话题ID',
+        type: 'json',
+        default: null,
+    })
+    topic_ids: string[];
 
     @Column({
         comment: '用户内容类型',
@@ -76,9 +87,18 @@ export class UserContent {
 
     @Column({
         comment: '用户内容封面',
-        type: 'json',
+        type: 'varchar',
+        length: 256,
+        default: null,
     })
-    cover_url: string[];
+    cover_url: string;
+
+    @Column({
+        comment: '用户内容图片',
+        type: 'json',
+        default: null,
+    })
+    picture_urls: string[];
 
     @Column({
         comment: '用户内容状态',
@@ -102,4 +122,12 @@ export class UserContent {
         onUpdate: 'CURRENT_TIMESTAMP',
     })
     update_time: Date;
+
+
+    @Column({
+        comment: '审核结果',
+        type: 'text',
+        default: null,
+    })
+    check_result: string;
 }

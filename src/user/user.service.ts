@@ -215,11 +215,13 @@ export class UserService {
             );
         }
         const avatarName = randomUUID() + '.' + avatar.mimetype.split('/')[1];
-        const ossUrl = await this.OssUtilService.upload(avatar, avatarName);
+        const ossUrl = await this.OssUtilService.uploadAvatar(avatar, avatarName);
         user.profile.avatar_url = ossUrl;
         await this.manager.save(user);
         return Result.success(MessageConstant.SUCCESS, null);
     }
+
+    // 获取用户动态
     async getUserDynamic(userId: string) {
         const userContent = await this.manager.findBy(UserContent, {
             user_id: userId,

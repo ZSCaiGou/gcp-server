@@ -4,11 +4,13 @@ export class Result<T> {
     private code: number;
     private message: string;
     private data: T | null;
+    private errno: number;
 
-    constructor(code: number, message: string, data: T) {
+    constructor(code: number, message: string, data: T,errno: number = 0) {
         this.code = code;
         this.message = message;
         this.data = data;
+        this.errno = errno;
     }
 
     get StatuCode(): number {

@@ -14,6 +14,11 @@ import { OssUtilService } from './utils/oss-util/oss-util.service';
 import { OssUtilModule } from './utils/oss-util/oss-util.module';
 import { GameModule } from './game/game.module';
 import { TopicModule } from './topic/topic.module';
+import { UserContentModule } from './user_content/user_content.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TasksService } from './tasks/tasks.service';
+import { TasksModule } from './tasks/tasks.module';
+import { GreenModule } from './utils/green/green.module';
 
 @Module({
     imports: [
@@ -42,6 +47,7 @@ import { TopicModule } from './topic/topic.module';
         ConfigModule.forRoot({
             isGlobal: true,
         }),
+        ScheduleModule.forRoot(),
         UserModule,
         AuthModule,
         CaslModule,
@@ -49,6 +55,9 @@ import { TopicModule } from './topic/topic.module';
         OssUtilModule,
         GameModule,
         TopicModule,
+        UserContentModule,
+        TasksModule,
+        GreenModule,
     ],
     controllers: [AppController],
     providers: [AppService],

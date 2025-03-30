@@ -37,7 +37,7 @@ export class Interaction {
         type: 'varchar',
         length: 32,
     })
-    user_id: number;
+    user_id: string;
 
     @Column({
         type: 'enum',
@@ -45,17 +45,24 @@ export class Interaction {
         comment: '目标类型',
     })
     target_type: TargetType;
+
     @Column({
         type: 'bigint',
         comment: '目标id',
     })
     target_id: bigint;
+
     @Column({
         type: 'enum',
         enum: InteractionType,
         comment: '互动类型',
     })
     type: string;
-    @Column()
+
+    @Column({
+        type: 'timestamp',
+        comment: '创建时间',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
     created_at: Date;
 }

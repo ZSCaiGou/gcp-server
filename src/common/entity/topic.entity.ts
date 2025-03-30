@@ -1,11 +1,20 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    Generated,
+    PrimaryColumn,
+} from 'typeorm';
 
 @Entity({
     comment: '话题表',
 })
 export class Topic {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryColumn({
+        type: 'bigint',
+    })
+    @Generated()
+    id: bigint;
 
     @Column({
         type: 'varchar',
@@ -16,33 +25,35 @@ export class Topic {
 
     @Column({
         type: 'varchar',
-        length: 32,
+        length: 36,
         comment: '话题作者ID',
     })
     user_id: string;
 
     @Column({
-        type: 'text',
-        comment: '话题内容',
+        type: 'int',
+        comment: '话题热度',
+        default: 0,
     })
-    content: string;
+    hot_point: number;
 
     @Column({
-        type: 'json',
-        comment: '话题相关游戏ID列表',
+        type: 'int',
+        comment: '话题参与人数',
+        default: 0,
     })
-    game_ids: string[];
-    
+    join_count: number;
+
     @Column({
-        type:"timestamp",
-        default: () => "CURRENT_TIMESTAMP",
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
     })
     created_at: Date;
 
     @Column({
-        type:"timestamp",
-        default: () => "CURRENT_TIMESTAMP",
-        onUpdate: "CURRENT_TIMESTAMP",
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
     })
     updated_at: Date;
 }
