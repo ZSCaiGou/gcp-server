@@ -14,6 +14,7 @@ export enum TargetType {
  *  @property {string} SHARE - 分享
  *  @property {string} COLLECT - 收藏
  *  @property {string} FOLLOW - 关注
+ *  @property {string} JOIN - 加入
  */
 export enum InteractionType {
     LIKE = 'like',
@@ -21,6 +22,7 @@ export enum InteractionType {
     SHARE = 'share',
     COLLECT = 'collect',
     FOLLOW = 'follow',
+    JOIN='join',
 }
 
 @Entity({
@@ -35,7 +37,7 @@ export class Interaction {
 
     @Column({
         type: 'varchar',
-        length: 32,
+        length: 36,
     })
     user_id: string;
 

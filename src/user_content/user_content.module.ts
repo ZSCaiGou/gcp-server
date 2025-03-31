@@ -7,5 +7,6 @@ import { OssUtilModule } from 'src/utils/oss-util/oss-util.module';
   controllers: [UserContentController],
   providers: [UserContentService],
   imports: [OssUtilModule],
+  exports: [UserContentService],
 })
 export class UserContentModule {}

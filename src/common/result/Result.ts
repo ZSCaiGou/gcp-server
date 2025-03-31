@@ -16,7 +16,9 @@ export class Result<T> {
     get StatuCode(): number {
         return this.code;
     }
-
+    get Data(): T | null {
+        return this.data;
+    }
     public static success<T>(message: string = 'success', data: T): Result<T> {
         return new Result<T>(HttpStatus.OK, message, data);
     }

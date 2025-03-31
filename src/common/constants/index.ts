@@ -28,6 +28,11 @@ export const MessageConstant = {
     EMAIL_ALREADY_EXIST: '邮箱已存在',
     PHONE_ALREADY_EXIST: '手机号已存在',
     VERIFY_CODE_SEND_SUCCESS: '验证码发送成功',
+    USER_CONTENT_NOT_FOUND: '用户内容不存在',
+    USER_CONTENT_ALREADY_EXIST: '用户内容已存在',
+    USER_CONTENT_NOT_OWNER: '不是该用户内容的拥有者',
+    USER_CONTENT_NOT_APPROVED: '用户内容未通过审核',
+    USER_CONTENT_NOT_PUBLIC: '用户内容未公开',
 };
 
 export enum AbilityAction {
@@ -59,6 +64,12 @@ export enum AbilityResource {
     ALL='ALL',
 }
 
+
+export enum ExpPoint{
+    EXP_POINT_UPLOAD_CONTENT = 10, // 上传内容
+    EXP_POINT_COMMENT_CONTENT = 2, // 评论内容
+    EXP_POINT_LOGIN = 10, // 登录
+}
 
 export const IS_PUBLIC_KEY = 'isPublic';
 export const DEFAULT_AVATAR_URL = "https://gcpserver.oss-cn-chengdu.aliyuncs.com/avatar/default.png?x-oss-process=style/image-compress"

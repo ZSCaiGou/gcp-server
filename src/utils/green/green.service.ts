@@ -20,15 +20,15 @@ export class GreenService {
     }
 
     async contentScan(content: string): Promise<any> {
-        let textModerationRequest = new $Green20220302.TextModerationRequest({
-            service: 'comment_detection',
+        let textModerationPlusRequest = new $Green20220302.TextModerationPlusRequest({
+            service: 'comment_detection_pro_01',
             serviceParameters: JSON.stringify({content: content}),
         });
         let runtime = new $Util.RuntimeOptions({});
         try {
             // 复制代码运行请自行打印 API 的返回值
-            const result = await this.greenClient.textModerationWithOptions(
-                textModerationRequest,
+            const result = await this.greenClient.textModerationPlusWithOptions(
+                textModerationPlusRequest,
                 runtime,
             );
             return result;

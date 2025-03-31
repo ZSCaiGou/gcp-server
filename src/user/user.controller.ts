@@ -102,10 +102,17 @@ export class UserController {
         res.status(result.StatuCode).send(result);
     }
 
-    @Get("dynamic")
-    async getUserDynamic(@Req() req: Request, @Res() res: Response) {
+    @Get('dynamic')
+    async getUserDynamicContentList(@Req() req: Request, @Res() res: Response) {
         const userId = req['user'].id as string;
-        const result = await this.userService.getUserDynamic(userId);
+        const result = await this.userService.getUserDynamicContentList(userId);
+        res.status(result.StatuCode).send(result);
+    }
+    
+    @Get('upload')
+    async getUserUploadContentList(@Req() req: Request, @Res() res: Response) {
+        const userId = req['user'].id as string;
+        const result = await this.userService.getUserUploadContentList(userId);
         res.status(result.StatuCode).send(result);
     }
 }

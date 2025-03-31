@@ -11,6 +11,7 @@ import {
     Req,
     Res,
     UploadedFile,
+    Query,
 } from '@nestjs/common';
 import { UserContentService } from './user_content.service';
 import { CreateUserContentDto } from './dto/create-user_content.dto';
@@ -55,6 +56,25 @@ export class UserContentController {
         @UploadedFile() picture: Express.Multer.File,
     ) {
         const result = await this.userContentService.uploadPicture(picture);
+        res.status(result.StatuCode).send(result);
+    }
+    // 获取主页用户内容
+    @Get('main-user-content')
+    @Public()
+    async getMainUserContent(@Req() req: Request, @Res() res: Response) {
+        const result = await this.userContentService.getMainUserContent();
+        res.status(result.StatuCode).send(result);
+    }
+
+    // 根据id获取用户内容
+    @Get('get-content')
+    @Public()
+    async getUserContentById(
+        @Query('id') id: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        const result = await this.userContentService.getUserContentById(id);
         res.status(result.StatuCode).send(result);
     }
 }

@@ -1,4 +1,7 @@
-import { TextModerationResponse } from '@alicloud/green20220302';
+import {
+    TextModerationResponse,
+    TextModerationPlusResponse,
+} from '@alicloud/green20220302';
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval, Timeout } from '@nestjs/schedule';
 import {
@@ -38,17 +41,19 @@ export class TasksService {
         userContentList.forEach(async (userContent) => {
             if (userContent) {
                 const content = userContent.content;
-                const result: TextModerationResponse =
+                const result: TextModerationPlusResponse =
                     await this.greenService.contentScan(content);
-                console.log(result);
-                
-                if (result.body?.data?.labels === "") {
+
+                if (result.body?.data?.riskLevel === 'none') {
                     userContent.status = ContentStatus.APPROVED;
+                    // #TODO 增加积分奖励
                 } else {
                     userContent.check_result =
-                        result.body?.data?.descriptions || '';
+                        result.body?.data?.result?.[0].description || '';
                     userContent.status = ContentStatus.REJECTED;
-                    this.logger.log(`内容违规，id：${userContent.id} 结果：${userContent.check_result}`)
+                    this.logger.log(
+                        `内容违规，id：${userContent.id} 结果：${userContent.check_result}`,
+                    );
                 }
                 await this.manager.save(userContent);
                 this.logger.log(

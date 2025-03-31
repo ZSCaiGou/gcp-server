@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { User, UserStatus } from 'src/common/entity/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import bycypt from 'bcrypt';
@@ -25,6 +25,8 @@ import { Role } from 'src/common/entity/role.entity';
 import { UserProfile } from 'src/common/entity/user_profile.entity';
 import { UserLevel } from 'src/common/entity/user_level.entity';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { Game } from 'src/common/entity/game.entity';
+import { Topic } from 'src/common/entity/topic.entity';
 
 @Injectable()
 export class UserService {
@@ -215,18 +217,127 @@ export class UserService {
             );
         }
         const avatarName = randomUUID() + '.' + avatar.mimetype.split('/')[1];
-        const ossUrl = await this.OssUtilService.uploadAvatar(avatar, avatarName);
+        const ossUrl = await this.OssUtilService.uploadAvatar(
+            avatar,
+            avatarName,
+        );
         user.profile.avatar_url = ossUrl;
         await this.manager.save(user);
         return Result.success(MessageConstant.SUCCESS, null);
     }
 
     // 获取用户动态
-    async getUserDynamic(userId: string) {
-        const userContent = await this.manager.findBy(UserContent, {
+    async getUserDynamicContentList(userId: string) {
+        const dynamicContentList = await this.manager.findBy(UserContent, {
             user_id: userId,
             type: UserContentType.POST,
         });
-        return Result.success(MessageConstant.SUCCESS, userContent);
+        const data = await Promise.all(
+            dynamicContentList.map(async (content) => {
+                const createUser = await this.manager.findOne(User, {
+                    where: {
+                        id: content.user_id,
+                    },
+                });
+                // 获取游戏标签
+                const gameTags: Game[] = await this.manager.findBy(Game, {
+                    id: In(content.game_ids),
+                });
+
+                // 获取话题标签
+                const topicTags: Topic[] = await this.manager.findBy(Topic, {
+                    id: In(content.topic_ids),
+                });
+
+                return {
+                    id: content.id,
+                    title: content.title,
+                    cover_url: content.cover_url,
+                    create_time: content.create_time,
+                    content: content.content,
+                    type: content.type,
+                    user_info: {
+                        id: createUser?.id,
+                        nickname: createUser?.profile.nickname
+                            ? createUser?.profile.nickname
+                            : createUser?.username,
+                        avatar_url: createUser?.profile.avatar_url,
+                        level: createUser?.level.level,
+                    },
+                    game_tags: gameTags.map((game) => ({
+                        id: game.id,
+                        title: game.title,
+                        game_img_url: game.game_img_url,
+                    })),
+                    topic_tags: topicTags.map((topic) => ({
+                        id: topic.id,
+                        title: topic.title,
+                    })),
+                };
+            }),
+        );
+
+        return Result.success(MessageConstant.SUCCESS, data);
     }
+
+    // 获取用户投稿内容列表
+    async getUserUploadContentList(userId: string) {
+        const uploadContentList = await this.manager.findBy(UserContent, {
+            user_id: userId,
+            type: In([
+                UserContentType.GUIDE,
+                UserContentType.RESOURCE,
+                UserContentType.NEWS,
+            ]),
+        });
+        const data = await Promise.all(
+            uploadContentList.map(async (content) => {
+                const createUser = await this.manager.findOne(User, {
+                    where: {
+                        id: content.user_id,
+                    },
+                });
+                // 获取游戏标签
+                const gameTags: Game[] = await this.manager.findBy(Game, {
+                    id: In(content.game_ids),
+                });
+
+                // 获取话题标签
+                const topicTags: Topic[] = await this.manager.findBy(Topic, {
+                    id: In(content.topic_ids),
+                });
+
+                return {
+                    id: content.id,
+                    title: content.title,
+                    cover_url: content.cover_url,
+                    create_time: content.create_time,
+                    content: content.content,
+                    type: content.type,
+                    user_info: {
+                        id: createUser?.id,
+                        nickname: createUser?.profile.nickname
+                            ? createUser?.profile.nickname
+                            : createUser?.username,
+                        avatar_url: createUser?.profile.avatar_url,
+                        level: createUser?.level.level,
+                    },
+                    game_tags: gameTags.map((game) => ({
+                        id: game.id,
+                        title: game.title,
+                        game_img_url: game.game_img_url,
+                    })),
+                    topic_tags: topicTags.map((topic) => ({
+                        id: topic.id,
+                        title: topic.title,
+                    })),
+                };
+            }),
+        );
+
+        return Result.success(MessageConstant.SUCCESS, data);
+    }
+
+    // #TODO 增加用户经验
+    async addUserExp(userId: string, exp: number) {}
 }

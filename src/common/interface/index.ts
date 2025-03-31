@@ -33,3 +33,7 @@ export interface ResourceMap {
     UserProfile: UserProfile;
     ALL: any;
 }
+
+export interface CategoryGameList{
+    [key:string]:Game[]
+}
