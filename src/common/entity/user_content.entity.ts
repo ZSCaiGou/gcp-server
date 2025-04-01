@@ -130,4 +130,23 @@ export class UserContent {
         default: null,
     })
     check_result: string;
+
+    @Column({
+        comment: '点赞数',
+        type: "int",
+        default: 0,
+    })
+    like_count:number;
+    @Column({
+        comment: '收藏数',
+        type: "int",
+        default: 0,
+    })
+    collect_count:number;
+    @Column({
+        comment: '评论数',
+        type: "int",
+        default: 0,
+    })
+    comment_count:number;
 }

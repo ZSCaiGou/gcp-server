@@ -1,5 +1,5 @@
 import { DataSource, EntityManager } from 'typeorm';
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from 'src/common/entity/topic.entity';
@@ -32,4 +32,73 @@ export class TopicService {
         });
         return Result.success(MessageConstant.SUCCESS, data);
     }
+
+    // 创建话题
+    async createTopic(createTopicDto: CreateTopicDto){
+        // 创建话题
+        const topic = this.mannager.create(Topic, createTopicDto);
+        // 话题是否以及存在
+        const existTopic = await this.mannager.findOne(Topic, {
+            where:{
+                title:topic.title
+            }
+        });
+        if(existTopic){
+            return Result.error(MessageConstant.TOPIC_ALREADY_EXIST, HttpStatus.BAD_REQUEST, null)
+        }
+        // 保存话题
+        const savedTopic = await this.mannager.save(topic);
+        return Result.success(MessageConstant.SUCCESS, savedTopic);
+    }
+
+    // 更新话题
+    async updateTopic( user_id: string,updateTopicDto: UpdateTopicDto){
+        // 话题是否存在
+        const existTopic = await this.mannager.findOne(Topic, {
+            where:{
+                title:updateTopicDto.title
+            }
+        });
+        if(!existTopic){
+            return Result.error(MessageConstant.TOPIC_NOT_FOUND, HttpStatus.BAD_REQUEST, null)
+        }
+        // 判断是否是该话题的拥有者
+        if(existTopic.user_id!== user_id){
+            return Result.error(MessageConstant.TOPIC_NOT_OWNER, HttpStatus.BAD_REQUEST, null)
+        }
+
+        // 判断更新后的话题是否已经存在
+        const existTopicAfterUpdate = await this.mannager.findOne(Topic, {
+            where:{
+                title:updateTopicDto.title
+            }
+        });
+        if(existTopicAfterUpdate){
+            return Result.error(MessageConstant.TOPIC_ALREADY_EXIST, HttpStatus.BAD_REQUEST, null)
+        }
+        // 更新话题
+        const updatedTopic = await this.mannager.update(Topic,existTopic.id,updateTopicDto);
+        return Result.success(MessageConstant.SUCCESS, updatedTopic);
+
+    }
+    // 删除话题
+    async deleteTopic( user_id: string,topic_id: string){
+        // 话题是否存在
+        const existTopic = await this.mannager.findOne(Topic, {
+            where:{
+                title:topic_id
+            }
+        });
+        if(!existTopic){
+            return Result.error(MessageConstant.TOPIC_NOT_FOUND, HttpStatus.BAD_REQUEST, null)
+        }
+        // 判断是否是该话题的拥有者
+        if(existTopic.user_id!== user_id){
+            return Result.error(MessageConstant.TOPIC_NOT_OWNER, HttpStatus.BAD_REQUEST, null)
+        }
+        // 删除话题
+        const deletedTopic = await this.mannager.delete(Topic,existTopic.id);
+        return Result.success(MessageConstant.SUCCESS, deletedTopic);
+    }
+
 }

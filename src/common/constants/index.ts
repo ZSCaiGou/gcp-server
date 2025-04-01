@@ -33,7 +33,23 @@ export const MessageConstant = {
     USER_CONTENT_NOT_OWNER: '不是该用户内容的拥有者',
     USER_CONTENT_NOT_APPROVED: '用户内容未通过审核',
     USER_CONTENT_NOT_PUBLIC: '用户内容未公开',
-};
+    TOPIC_NOT_FOUND: '话题不存在',
+    TOPIC_ALREADY_EXIST: '话题已存在',
+    TOPIC_NOT_OWNER: '不是该话题的拥有者',
+    TOPIC_NOT_APPROVED: '话题未通过审核',
+    TOPIC_NOT_PUBLIC: '话题未公开',
+    COMMENT_NOT_FOUND: '评论不存在',
+    COMMENT_ALREADY_EXIST: '评论已存在',
+    COMMENT_NOT_OWNER: '不是该评论的拥有者',
+    COMMENT_NOT_APPROVED: '评论未通过审核',
+    COMMENT_NOT_PUBLIC: '评论未公开',
+    LIKE_ALREADY_EXIST: '已点赞',
+    REWARD_NOT_FOUND: '奖励不存在',
+    REWARD_ALREADY_EXIST: '奖励已存在',
+    REWARD_NOT_OWNER: '不是该奖励的拥有者',
+    REWARD_NOT_APPROVED: '奖励未通过审核',
+    COLLECT_ALREADY_EXIST: '已收藏',
+}
 
 export enum AbilityAction {
     MANAGE = 'MANAGE',
