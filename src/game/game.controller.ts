@@ -53,6 +53,7 @@ export class GameController {
 
     // 获取热门游戏社区列表
     @Get('hot-game-community')
+    @Public()
     async getHotGameCommunityList(@Req() req: Request, @Res() res: Response) {
         const result = await this.gameService.getHotGameCommunityList();
         res.status(result.StatuCode).send(result);

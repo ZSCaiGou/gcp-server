@@ -43,7 +43,8 @@ export class TasksService {
                 const content = userContent.content;
                 const result: TextModerationPlusResponse =
                     await this.greenService.contentScan(content);
-
+                console.log(result.body);
+                
                 if (result.body?.data?.riskLevel === 'none') {
                     userContent.status = ContentStatus.APPROVED;
                     // #TODO 增加积分奖励

@@ -19,6 +19,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TasksService } from './tasks/tasks.service';
 import { TasksModule } from './tasks/tasks.module';
 import { GreenModule } from './utils/green/green.module';
+import { ResourceModule } from './resource/resource.module';
+import { MessageModule } from './message/message.module';
+import { SearchModule } from './search/search.module';
+import { RewardModule } from './reward/reward.module';
+import { SupportModule } from './support/support.module';
+import { CommunityacitonModule } from './communityaciton/communityaciton.module';
 
 @Module({
     imports: [
@@ -58,6 +64,12 @@ import { GreenModule } from './utils/green/green.module';
         UserContentModule,
         TasksModule,
         GreenModule,
+        ResourceModule,
+        MessageModule,
+        SearchModule,
+        RewardModule,
+        SupportModule,
+        CommunityacitonModule,
     ],
     controllers: [AppController],
     providers: [AppService],
