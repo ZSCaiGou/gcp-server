@@ -25,22 +25,21 @@ export class AuthGuard implements CanActivate {
         // 获取请求对象
         const req = context.switchToHttp().getRequest<Request>();
 
-        this.logger.log("Path:" + req.path)
+        this.logger.log('Path:' + req.path);
         // 获取token
         const token = this.extractTokenFromHeader(req);
-        
+
         // 获取是否为公开路由
         const isPublic = this.reflector.get(
             IS_PUBLIC_KEY,
             context.getHandler(),
         );
 
-        // 如果为公开路由，则直接返回true
-        if (isPublic) {
-            return true;
-        }
-
+        // 如果是公开路由，直接返回true
         if (!token) {
+            if (isPublic) {
+                return true;
+            }
             throw new UnauthorizedException();
         }
         try {

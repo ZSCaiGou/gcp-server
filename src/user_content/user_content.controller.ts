@@ -74,7 +74,8 @@ export class UserContentController {
         @Req() req: Request,
         @Res() res: Response,
     ) {
-        const result = await this.userContentService.getUserContentById(id);
+        const userId = req['user']?.id as string;
+        const result = await this.userContentService.getUserContentById(id,userId);
         res.status(result.StatuCode).send(result);
     }
 }

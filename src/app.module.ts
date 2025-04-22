@@ -25,6 +25,7 @@ import { SearchModule } from './search/search.module';
 import { RewardModule } from './reward/reward.module';
 import { SupportModule } from './support/support.module';
 import { CommunityacitonModule } from './communityaciton/communityaciton.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
     imports: [
@@ -70,6 +71,7 @@ import { CommunityacitonModule } from './communityaciton/communityaciton.module'
         RewardModule,
         SupportModule,
         CommunityacitonModule,
+        CommentModule,
     ],
     controllers: [AppController],
     providers: [AppService],

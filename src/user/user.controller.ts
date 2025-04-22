@@ -115,4 +115,6 @@ export class UserController {
         const result = await this.userService.getUserUploadContentList(userId);
         res.status(result.StatuCode).send(result);
     }
+
+    
 }

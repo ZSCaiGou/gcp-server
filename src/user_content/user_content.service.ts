@@ -12,8 +12,13 @@ import {
 } from 'src/common/entity/user_content.entity';
 import { Game } from 'src/common/entity/game.entity';
 import { Topic } from 'src/common/entity/topic.entity';
-import { Interaction, TargetType } from 'src/common/entity/interaction.entity';
+import {
+    Interaction,
+    InteractionType,
+    TargetType,
+} from 'src/common/entity/interaction.entity';
 import { User } from 'src/common/entity/user.entity';
+import { Comment, CommentStatus } from 'src/common/entity/comment.entity';
 
 @Injectable()
 export class UserContentService {
@@ -150,11 +155,61 @@ export class UserContentService {
             }),
         );
 
-        return Result.success(MessageConstant.SUCCESS,data);
+        return Result.success(MessageConstant.SUCCESS, data);
     }
 
     // 根据id获取用户内容
-    async getUserContentById(id: string) {
+    async getUserContentById(id: string, userId: string | null) {
+        const interActionStatus: {
+            isLike: boolean;
+            isCollect: boolean;
+            likedComments: bigint[];
+        } = {
+            isLike: false,
+            isCollect: false,
+            likedComments: [],
+        };
+        // 如果用户id不为空，则是登录用户
+        if (userId) {
+            // 获取用户点赞和收藏状态
+            const like = await this.manager.findOne(Interaction, {
+                where: {
+                    target_type: TargetType.CONTENT,
+                    target_id: id as unknown as bigint,
+                    type: InteractionType.LIKE,
+                    user_id: userId,
+                },
+            });
+            // 获取用户收藏状态
+            const collect = await this.manager.findOne(Interaction, {
+                where: {
+                    target_type: TargetType.CONTENT,
+                    target_id: id as unknown as bigint,
+                    type: InteractionType.COLLECT,
+                    user_id: userId,
+                },
+            });
+            if (like) {
+                interActionStatus.isLike = true;
+            }
+            if (collect) {
+                interActionStatus.isCollect = true;
+            }
+
+            // 获取用户点赞过的评论
+            const likedComments = await this.manager.find(Interaction, {
+                where: {
+                    target_type: TargetType.COMMENT,
+                    type: InteractionType.LIKE,
+                    user_id: userId,
+                },
+            });
+            interActionStatus.likedComments.push(
+                ...likedComments.map((comment) => comment.target_id),
+            );
+        }
+
+        // 获取用户内容
         const userContent = await this.manager.findOne(UserContent, {
             where: {
                 id: id as unknown as bigint,
@@ -173,12 +228,28 @@ export class UserContentService {
                 id: userContent.user_id,
             },
         });
+        // 获取游戏标签
         const gameTags: Game[] = await this.manager.findBy(Game, {
             id: In(userContent.game_ids),
         });
+        // 获取话题标签
         const topicTags: Topic[] = await this.manager.findBy(Topic, {
             id: In(userContent.topic_ids),
         });
+
+        // 默认获取最新的20条获取评论
+        const comments = await this.manager.find(Comment, {
+            where: {
+                parent_id: -1 as unknown as bigint,
+                status: CommentStatus.NORMAL,
+                target_content_id: userContent.id,
+            },
+            order: {
+                created_at: 'desc',
+            },
+            take: 20,
+        });
+
         // 增加热度
         await this.manager.increment(
             Game,
@@ -219,6 +290,21 @@ export class UserContentService {
                 id: topic.id,
                 title: topic.title,
             })),
+            comments: comments.map((comment) => {
+                return {
+                    id: comment.id,
+                    content: comment.content,
+                    likeCount: comment.like_count,
+                    reply_count:comment.reply_count,
+                    create_at: comment.created_at,
+                    isLiked: interActionStatus.likedComments.includes(
+                        comment.id,
+                    ),
+                    user_info: comment.user_info,
+                    parent_id: comment.parent_id,
+                    origin_id:comment.origin_id
+                };
+            }),
         };
         return Result.success(MessageConstant.SUCCESS, data);
     }

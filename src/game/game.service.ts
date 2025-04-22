@@ -19,6 +19,8 @@ import {
     UserContent,
     UserContentType,
 } from 'src/common/entity/user_content.entity';
+import { title } from 'process';
+import { GetGamePageDto } from './dto/get-game-page.dto';
 
 @Injectable()
 export class GameService {
@@ -183,6 +185,75 @@ export class GameService {
 
         return Result.success(MessageConstant.SUCCESS, resultData);
     }
+    // 获取所有游戏分类列表
+    async getAllCategoryGameList() {
+        // 获取所有游戏分类列表
+        const categories = await this.manager.find(Category, {
+            order: {
+                id: 'ASC',
+            },
+        });
+        const resultData = await Promise.all(
+            categories.map(async (category) => {
+                // 获取游戏社区列表
+                const gameList = await this.manager
+                    .createQueryBuilder(Game, 'game')
+                    .where('JSON_CONTAINS(game.category,  :category)', {
+                        category: JSON.stringify(category.name),
+                    })
+                    .orderBy('game.title', 'DESC')
+                    .take(20)
+                    .getMany();
+                return {
+                    [category.name]: {
+                        gameList: gameList.map((game) => ({
+                            id: game.id,
+                            title: game.title,
+                            game_img_url: game.game_img_url,
+                        })),
+                        pageInfo: {
+                            total: gameList.length,
+                            page: 1,
+                            size: 20,
+                        },
+                    },
+                };
+            }),
+        );
+        return Result.success(MessageConstant.SUCCESS, resultData);
+    }
+    // 分页获取更多游戏列表
+    async getCategoryGamesByPage(pageDto: GetGamePageDto) {
+        const { page, size, category } = pageDto;
+        const skip = (page - 1) * size;
+        const take = size;
+        // 获取游戏社区列表
+        const gameList = await this.manager
+            .createQueryBuilder(Game, 'game')
+            .where('JSON_CONTAINS(game.category,  :category)', {
+                category: JSON.stringify(category),
+            })
+            .orderBy('game.title', 'DESC')
+            .skip(skip)
+            .take(take)
+            .getMany();
+        // 格式化数据
+        const data = gameList.map((game) => {
+            return {
+                id: game.id,
+                title: game.title,
+                game_img_url: game.game_img_url,
+            };
+        });
+        return Result.success(MessageConstant.SUCCESS, {
+            gameList: data,
+            pageInfo: {
+                total: gameList.length,
+                page,
+                size,
+            },
+        });
+    }
 
     // 获取游戏社区帖子列表
     async getGameCommunityPostContentList(gameId: string) {
@@ -206,6 +277,7 @@ export class GameService {
             postList.map(async (post) => {
                 const result = await this.userContentService.getUserContentById(
                     post.id as unknown as string,
+                    null    
                 );
                 return result.Data;
             }),
@@ -236,6 +308,7 @@ export class GameService {
             guideList.map(async (post) => {
                 const result = await this.userContentService.getUserContentById(
                     post.id as unknown as string,
+                    null
                 );
                 return result.Data;
             }),
@@ -266,6 +339,7 @@ export class GameService {
             newsList.map(async (post) => {
                 const result = await this.userContentService.getUserContentById(
                     post.id as unknown as string,
+                    null
                 );
                 return result.Data;
             }),

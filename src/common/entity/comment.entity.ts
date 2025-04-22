@@ -1,7 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn } from 'typeorm';
 
-
-
 export enum CommentStatus {
     NORMAL = 'normal',
     DELETED = 'deleted',
@@ -25,18 +23,19 @@ export class Comment {
     })
     content: string;
 
-    @Column({
-        type: 'varchar',
-        comment: '用户ID',
-        length: 32,
-    })
-    user_id: string;
 
     @Column({
         type: 'bigint',
         comment: '父评论ID',
     })
-    parent_id: number;
+    parent_id: bigint;
+
+    @Column({
+        type: 'bigint',
+        comment: '原始评论ID',
+        default: -1
+    })
+    origin_id: bigint;
 
     @Column({
         type: 'enum',
@@ -50,14 +49,14 @@ export class Comment {
         type: 'bigint',
         comment: '目标内容ID',
     })
-    target_content_id:bigint;
+    target_content_id: bigint;
 
     @Column({
         type: 'timestamp',
         comment: '创建时间',
         default: () => 'CURRENT_TIMESTAMP',
     })
-    createdAt: Date;
+    created_at: Date;
 
     @Column({
         type: 'timestamp',
@@ -65,5 +64,29 @@ export class Comment {
         default: () => 'CURRENT_TIMESTAMP',
         onUpdate: 'CURRENT_TIMESTAMP',
     })
-    updatedAt: Date;
+    updated_at: Date;
+
+    @Column({
+        type: 'int',
+        comment: '点赞数',
+        default: 0,
+    })
+    like_count: number;
+    @Column({
+        type: 'int',
+        comment: '回复数',
+        default: 0,
+    })
+    reply_count: number;
+
+    @Column({
+        type:"json",
+        comment:"用户信息",
+        default:null
+    })
+    user_info: {
+        id: string;
+        nickname: string;
+        avatar_url: string;
+    }
 }

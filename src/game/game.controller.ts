@@ -15,6 +15,7 @@ import { CreateGameDto } from './dto/create-game.dto';
 import { UpdateGameDto } from './dto/update-game.dto';
 import { Public } from 'src/common/decorator/public.decorator';
 import { Request, Response } from 'express';
+import { GetGamePageDto } from './dto/get-game-page.dto';
 
 @Controller('game')
 export class GameController {
@@ -67,31 +68,25 @@ export class GameController {
         res.status(result.StatuCode).send(result);
     }
 
-    // 根据游戏分类获取游戏社区列表
-    @Get('game-community-category')
+
+    // 获取所有游戏分类下的游戏列表
+    @Get('category-game-list')
     @Public()
-    async getGameCommunityListByCategory(
-        @Query('category') category: string,
-        @Req() req: Request,
-        @Res() res: Response,
-    ) {
-        const result =
-            await this.gameService.getGameCommunityListByCategory(category);
+    async getAllCategoryGameList(@Req() req: Request, @Res() res: Response) {
+        const result = await this.gameService.getAllCategoryGameList();
         res.status(result.StatuCode).send(result);
     }
-    // 根据游戏分类列表获取游戏社区列表
-    @Post('game-community-category-list')
+
+    // 分页获取游戏分类下的更多游戏列表
+    @Post('game-community-list-page')
     @Public()
-    async postGameCommunityListByCategoryList(
+    async getCategoryGamesByPage(
         @Req() req: Request,
         @Res() res: Response,
-        @Body() categoryList: string[],
+        @Body() pageDto: GetGamePageDto,
     ) {
-        const result =
-            await this.gameService.getGameCommunityListByCategoryList(
-                categoryList,
-            );
-        res.status(result.StatuCode).send(result);
+        const resutl = await this.gameService.getCategoryGamesByPage(pageDto);
+        res.status(resutl.StatuCode).send(resutl);
     }
 
     // 获取游戏社区帖子列表
