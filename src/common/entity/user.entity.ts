@@ -12,6 +12,7 @@ import { Role } from './role.entity';
 import { Permission } from './permission.entity';
 import { UserProfile } from './user_profile.entity';
 import { UserLevel } from './user_level.entity';
+import { Game } from './game.entity';
 
 export enum UserStatus {
     ACTIVE = 'active',
@@ -90,30 +91,36 @@ export class User {
     status: UserStatus;
 
     // 用户角色
-    @ManyToMany(() => Role,{eager:true})
+    @ManyToMany(() => Role, { eager: true })
     @JoinTable()
     roles: Role[];
 
-    // 用户权限
-    @ManyToMany(() => Permission,{
-        eager:true
+    @ManyToMany(() => Game, {
+        eager: true,
     })
     @JoinTable()
-    permissions:Permission[]
+    managed_communities: Game[];
+
+    // 用户权限
+    @ManyToMany(() => Permission, {
+        eager: true,
+    })
+    @JoinTable()
+    permissions: Permission[];
 
     // 用户资料
     @OneToOne(() => UserProfile, {
-        eager:true,
-        cascade:true
+        eager: true,
+        cascade: true,
     })
     @JoinColumn()
-    profile:UserProfile
+    profile: UserProfile;
 
     // 用户等级
     @OneToOne(() => UserLevel, {
-        eager:true,
-        cascade:true
+        eager: true,
+        cascade: true,
     })
     @JoinColumn()
-    level:UserLevel
+    level: UserLevel;
 }

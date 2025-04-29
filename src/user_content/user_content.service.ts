@@ -273,6 +273,9 @@ export class UserContentService {
             picture_urls: userContent.picture_urls,
             content: userContent.content,
             type: userContent.type,
+            like_count: userContent.like_count,
+            collect_count: userContent.collect_count,
+            comment_count: userContent.comment_count,
             user_info: {
                 id: createUser?.id,
                 nickname: createUser?.profile.nickname
@@ -295,17 +298,41 @@ export class UserContentService {
                     id: comment.id,
                     content: comment.content,
                     likeCount: comment.like_count,
-                    reply_count:comment.reply_count,
+                    reply_count: comment.reply_count,
                     create_at: comment.created_at,
                     isLiked: interActionStatus.likedComments.includes(
                         comment.id,
                     ),
                     user_info: comment.user_info,
                     parent_id: comment.parent_id,
-                    origin_id:comment.origin_id
+                    origin_id: comment.origin_id,
                 };
             }),
         };
         return Result.success(MessageConstant.SUCCESS, data);
+    }
+    // 删除用户内容
+    async deleteUserContent(contentId: bigint, userId: string) {
+        const content = await this.manager.findOneBy(UserContent, {
+            id: contentId,
+        });
+        if (!content) {
+            return Result.error(
+                MessageConstant.USER_CONTENT_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                null,
+            );
+        }
+        if (content.user_id === userId) {
+            content.status = ContentStatus.DELETED;
+            await this.manager.save(content);
+            return Result.success(MessageConstant.SUCCESS, null);
+        } else {
+            return Result.error(
+                MessageConstant.USER_CONTENT_NOT_OWNER,
+                HttpStatus.FORBIDDEN,
+                null,
+            );
+        }
     }
 }

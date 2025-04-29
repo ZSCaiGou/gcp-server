@@ -6,6 +6,7 @@ import { Comment } from 'src/common/entity/comment.entity';
 import { User } from 'src/common/entity/user.entity';
 import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
+import { UserContent } from 'src/common/entity/user_content.entity';
 
 @Injectable()
 export class CommentService {
@@ -56,6 +57,13 @@ export class CommentService {
             savedComment.origin_id = savedComment.id;
             await this.manager.save(savedComment);
         }
+        // 更新用户的评论数
+        await this.manager.increment(
+            UserContent,
+            { id: target_content_id },
+            'comment_count',
+            1,
+        );
 
         return Result.success(MessageConstant.SUCCESS, savedComment);
     }

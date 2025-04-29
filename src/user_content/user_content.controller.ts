@@ -23,7 +23,7 @@ import { Public } from 'src/common/decorator/public.decorator';
 @Controller('user-content')
 export class UserContentController {
     constructor(private readonly userContentService: UserContentService) {}
-
+    // 上传封面
     @Post('cover')
     @UseInterceptors(FileInterceptor('cover'))
     async uploadCover(
@@ -34,7 +34,7 @@ export class UserContentController {
         const result = await this.userContentService.uploadCover(cover);
         res.status(result.StatuCode).send(result);
     }
-
+    // 保存用户内容
     @Post('post-content')
     async savePostContent(
         @Body() createUserContentDto: CreateUserContentDto,
@@ -75,7 +75,24 @@ export class UserContentController {
         @Res() res: Response,
     ) {
         const userId = req['user']?.id as string;
-        const result = await this.userContentService.getUserContentById(id,userId);
+        const result = await this.userContentService.getUserContentById(
+            id,
+            userId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+
+    @Delete('delete-user-content/:id')
+    async deleteUserContent(
+        @Param('id') id: bigint,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        const userId = req['user']?.id as string;
+        const result = await this.userContentService.deleteUserContent(
+            id,
+            userId,
+        );
         res.status(result.StatuCode).send(result);
     }
 }

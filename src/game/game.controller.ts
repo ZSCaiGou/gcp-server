@@ -68,7 +68,6 @@ export class GameController {
         res.status(result.StatuCode).send(result);
     }
 
-
     // 获取所有游戏分类下的游戏列表
     @Get('category-game-list')
     @Public()
@@ -123,6 +122,12 @@ export class GameController {
         @Res() res: Response,
     ) {
         const result = await this.gameService.getGameCommunityNewsList(gameId);
+        res.status(result.StatuCode).send(result);
+    }
+
+    @Get('admin-communities')
+    async getAdminCommunities(@Req() req: Request, @Res() res: Response) {
+        const result = await this.gameService.getAdminCommunities();
         res.status(result.StatuCode).send(result);
     }
 }

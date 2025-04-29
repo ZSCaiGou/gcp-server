@@ -14,6 +14,7 @@ import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { Request, Response } from 'express';
+import { Public } from 'src/common/decorator/public.decorator';
 
 @Controller('comment')
 export class CommentController {
@@ -33,6 +34,7 @@ export class CommentController {
         res.status(result.StatuCode).send(result);
     }
     @Get('get-replies')
+    @Public()
     async getCommentRepliesById(
         @Query('comment_id') comment_id: string,
         @Req() req: Request,

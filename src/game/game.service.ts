@@ -347,4 +347,19 @@ export class GameService {
 
         return Result.success(MessageConstant.SUCCESS, contentList);
     }
+
+    async getAdminCommunities(){
+        const communities = await this.manager.find(Game, {
+            order: {
+                id: 'ASC',
+            },
+        });
+        const data = communities.map((community) => {
+            return {
+                id: community.id,
+                title: community.title,
+            };
+        });
+        return Result.success(MessageConstant.SUCCESS, data);
+    }
 }

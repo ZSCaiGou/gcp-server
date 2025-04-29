@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Like, Not, Repository } from 'typeorm';
 import { User, UserStatus } from 'src/common/entity/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import bycypt from 'bcrypt';
@@ -17,6 +17,7 @@ import { Result } from 'src/common/result/Result';
 import { DEFAULT_AVATAR_URL, MessageConstant } from 'src/common/constants';
 import { JwtService } from '@nestjs/jwt';
 import {
+    ContentStatus,
     UserContent,
     UserContentType,
 } from 'src/common/entity/user_content.entity';
@@ -27,6 +28,7 @@ import { UserLevel } from 'src/common/entity/user_level.entity';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { Game } from 'src/common/entity/game.entity';
 import { Topic } from 'src/common/entity/topic.entity';
+import { PaginationUserDto } from './dto/pagination-user.dto';
 
 @Injectable()
 export class UserService {
@@ -231,6 +233,7 @@ export class UserService {
         const dynamicContentList = await this.manager.findBy(UserContent, {
             user_id: userId,
             type: UserContentType.POST,
+            status: Not(ContentStatus.DELETED),
         });
         const data = await Promise.all(
             dynamicContentList.map(async (content) => {
@@ -289,6 +292,7 @@ export class UserService {
                 UserContentType.RESOURCE,
                 UserContentType.NEWS,
             ]),
+            status: Not(ContentStatus.DELETED),
         });
         const data = await Promise.all(
             uploadContentList.map(async (content) => {
@@ -340,4 +344,163 @@ export class UserService {
 
     // #TODO 增加用户经验
     async addUserExp(userId: string, exp: number) {}
+    // 管理员分页获取用户数据
+    async getAdminUsersPaginated(
+        paginationUserDto: PaginationUserDto,
+        userId: string,
+    ) {
+        // 检查是否是管理员
+        const user = await this.manager.findOneBy(User, { id: userId });
+        
+        
+        if (!user?.roles.some((role) => role.role_name === 'ADMIN' || role.role_name === 'SUPER_ADMIN')) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        // 提取数据
+        const { page, pageSize, status, search, sortField, sortOrder, roles } =
+            paginationUserDto;
+
+        // 筛选条件
+        const where = {};
+        if (status) {
+            where['status'] = In(status.split(','));
+        }
+        if (search) {
+            where['username'] = Like(`%${search}%`);
+        }
+        if (roles) {
+            where['roles'] = { role_name: In(roles.split(',')) };
+        }
+        // 排序条件
+        const order = {};
+        if (sortField) {
+            order[sortField] = sortOrder === 'asc' ? 'ASC' : 'DESC';
+        }
+
+        // 分页查询
+        const [data, total] = await this.manager.findAndCount(User, {
+            where,
+            order,
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+        });
+
+        // 格式化数据
+        const result = {
+            items: data.map((user) => {
+                return {
+                    id: user.id,
+                    username: user.username,
+                    phone:
+                        user.phone.substring(0, 3) +
+                        '****' +
+                        user.phone.substring(7, 11),
+                    email: user.email,
+                    status: user.status,
+                    role: user.roles[0].role_name,
+                    managed_communities: user.managed_communities.map(
+                        (game) => ({
+                            title: game.title,
+                            id: game.id,
+                            key: game.id,
+                        }),
+                    ),
+                    create_time: user.create_time,
+                    last_login_time: user.last_login_time,
+                };
+            }),
+            total,
+            page,
+            pageSize,
+        };
+
+        return Result.success(MessageConstant.SUCCESS, result);
+    }
+    // 管理员修改用户信息
+    async updateAdminUser(
+        userId: string,
+        updateUserDto: UpdateUserDto,
+        adminId: string,
+    ) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminId });
+        if (!admin?.roles.some((role) => role.role_name === 'ADMIN' || role.role_name === 'SUPER_ADMIN')) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        // 找到要修改的用户
+        const { username, email, status, role, managed_communities } =
+            updateUserDto;
+        // 找到要修改的用户
+        const userToUpdate = await this.manager.findOneBy(User, { id: userId });
+        // 验证用户是否存在
+        if (!userToUpdate) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+
+        // 获取角色
+        const updateRole = await this.manager.findOneBy(Role, {
+            role_name: role,
+        });
+        // 只有超级管理员才能任命管理员
+        if (
+            updateRole?.role_name === 'ADMIN' &&
+            admin.roles[0].role_name !== 'SUPER_ADMIN'
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_SUPER_ADMIN,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证角色是否存在
+        if (updateRole) {
+            // 用户的Roles中没有这个角色，则添加
+            if (!userToUpdate.roles.some((role) => role === updateRole)) {
+                userToUpdate.roles = [updateRole];
+            }
+        }
+        // 更新
+        userToUpdate.username = username;
+        userToUpdate.email = email;
+        userToUpdate.status = status;
+        // 更新管理的社区
+        const manage_games = await this.manager.find(Game, {
+            where: {
+                id: In(managed_communities.map((item) => item.id)),
+            },
+        });
+        userToUpdate.managed_communities = manage_games;
+        const result = await this.manager.save(userToUpdate);
+        // 更新用户信息
+        return Result.success(MessageConstant.SUCCESS, {
+            id: result.id,
+            username: result.username,
+            email: result.email,
+            status: result.status,
+            role: result.roles[0].role_name,
+            phone:
+                result.phone.substring(0, 3) +
+                '****' +
+                result.phone.substring(7, 11),
+            managed_communities: result.managed_communities.map((game) => ({
+                title: game.title,
+                id: game.id,
+                key: game.id,
+            })),
+            create_time: result.create_time,
+            last_login_time: result.last_login_time,
+        });
+    }
 }

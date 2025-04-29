@@ -29,6 +29,7 @@ import { Public } from 'src/common/decorator/public.decorator';
 import { ApiHeader } from '@nestjs/swagger';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { PaginationUserDto } from './dto/pagination-user.dto';
 
 @Controller('user')
 @ApiHeader({
@@ -108,13 +109,31 @@ export class UserController {
         const result = await this.userService.getUserDynamicContentList(userId);
         res.status(result.StatuCode).send(result);
     }
-    
+
     @Get('upload')
     async getUserUploadContentList(@Req() req: Request, @Res() res: Response) {
         const userId = req['user'].id as string;
         const result = await this.userService.getUserUploadContentList(userId);
         res.status(result.StatuCode).send(result);
     }
-
+    @Get('admin-users-paginated')
+    async getAdminUsersPaginated(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Query() paginationUserDto: PaginationUserDto,
+    ) {
+        const userId = req['user'].id as string;
+        const result = await this.userService.getAdminUsersPaginated(
+            paginationUserDto,
+            userId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    @Put('admin-user/:id')
+    async putAdminUser(@Req() req: Request, @Res() res: Response, @Body() updateUserDto: UpdateUserDto, @Param('id') userId: string){
+        const adminId = req['user'].id as string;
+        const result = await this.userService.updateAdminUser(userId, updateUserDto, adminId);
+        res.status(result.StatuCode).send(result);
     
+    }
 }
