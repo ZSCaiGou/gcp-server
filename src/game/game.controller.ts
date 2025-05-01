@@ -9,6 +9,8 @@ import {
     Query,
     Req,
     Res,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
 import { GameService } from './game.service';
 import { CreateGameDto } from './dto/create-game.dto';
@@ -16,6 +18,12 @@ import { UpdateGameDto } from './dto/update-game.dto';
 import { Public } from 'src/common/decorator/public.decorator';
 import { Request, Response } from 'express';
 import { GetGamePageDto } from './dto/get-game-page.dto';
+import { PaginationCommunityDto } from './dto/pagination-community.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { AdminCreateCommunityDto } from './dto/admin-create-community.dto';
+import { GameStatus } from 'src/common/entity/game.entity';
+import { AdminUpdateCommunityDto } from './dto/admin-update-community.dto';
+import { PaginationFollowUserDto } from './dto/pagination-follow-user.dto';
 
 @Controller('game')
 export class GameController {
@@ -124,10 +132,123 @@ export class GameController {
         const result = await this.gameService.getGameCommunityNewsList(gameId);
         res.status(result.StatuCode).send(result);
     }
-
+    // 管理员获取社区
     @Get('admin-communities')
     async getAdminCommunities(@Req() req: Request, @Res() res: Response) {
         const result = await this.gameService.getAdminCommunities();
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员分页获取社区列表
+    @Get('admin-communities-paginated')
+    async getAdminCommunitiesPaginated(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Query() paginationCommunityDto: PaginationCommunityDto,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.getAdminCommunitiesPaginated(
+            paginationCommunityDto,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员上传社区图片
+    @Post('admin-upload-community-img')
+    @UseInterceptors(FileInterceptor('image'))
+    async AdminUploadCommunityImg(
+        @Req() req: Request,
+        @Res() res: Response,
+        @UploadedFile() image: Express.Multer.File,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminUploadCommunityImg(
+            image,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员创建社区
+    @Post('admin-create-community')
+    async adminCreateCommunity(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body() createGameDto: AdminCreateCommunityDto,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminCreateCommunity(
+            createGameDto,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员删除社区
+    @Patch('admin-delete-community')
+    async adminDeleteCommunity(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body("community_ids") communityIds: bigint[],
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminDeleteCommunity(
+            communityIds,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员修改社区状态
+    @Patch('admin-change-community-status')
+    async adminChangeCommunityStatus(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body("community_ids") communityIds: bigint[],
+        @Body("status") status: string,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminChangeCommunityStatus(
+            communityIds,
+            status as GameStatus,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员更新社区
+    @Patch('admin-update-community/:id')
+    async adminUpdateCommunity(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Param('id') communityId: bigint,
+        @Body() updateGameDto: AdminUpdateCommunityDto,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminUpdateCommunity(
+            communityId,
+            updateGameDto,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员获取社区粉丝列表
+    @Get('admin-get-community-followers/:communityId')
+    async adminGetCommunityFollowers(
+        @Param('communityId') communityId: bigint,
+        @Query() paginationFollowUserDto: PaginationFollowUserDto,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminGetCommunityFollowers(
+            communityId,
+            adminId,
+            paginationFollowUserDto,
+        );
+        res.status(result.StatuCode).send(result);
+    
+    }
+    // 管理员获取社区管理员列表
+    @Get('admin-get-moderators/:communityId')
+    async adminGetModerators(@Param('communityId') communityId: bigint, @Req() req: Request, @Res() res: Response) {
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminGetModerators(communityId, adminId);
         res.status(result.StatuCode).send(result);
     }
 }

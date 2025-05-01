@@ -30,6 +30,10 @@ import { ApiHeader } from '@nestjs/swagger';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PaginationUserDto } from './dto/pagination-user.dto';
+import { AdminAddUserDto } from './dto/admin-add-user.dto';
+import { UserStatus } from 'src/common/entity/user.entity';
+import { AdminAddModeratorDto } from './dto/admin-add-moderator.dto';
+import { AdminDeleteModeratorDto } from './dto/admin-delete-moderator.dto';
 
 @Controller('user')
 @ApiHeader({
@@ -130,10 +134,77 @@ export class UserController {
         res.status(result.StatuCode).send(result);
     }
     @Put('admin-user/:id')
-    async putAdminUser(@Req() req: Request, @Res() res: Response, @Body() updateUserDto: UpdateUserDto, @Param('id') userId: string){
+    async putAdminUser(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body() updateUserDto: UpdateUserDto,
+        @Param('id') userId: string,
+    ) {
         const adminId = req['user'].id as string;
-        const result = await this.userService.updateAdminUser(userId, updateUserDto, adminId);
+        const result = await this.userService.updateAdminUser(
+            userId,
+            updateUserDto,
+            adminId,
+        );
         res.status(result.StatuCode).send(result);
-    
+    }
+
+    @Post('admin-add-user')
+    async addAdminUser(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body() addUserDto: AdminAddUserDto,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.userService.addAdminUser(addUserDto, adminId);
+        res.status(result.StatuCode).send(result);
+    }
+
+    @Patch('admin-delete-user')
+    async adminDeleteUser(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body('userIds') userIds: string[],
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.userService.adminDeleteUser(userIds, adminId);
+        res.status(result.StatuCode).send(result);
+    }
+
+    @Patch('admin-change-user-status')
+    async adminChangeUserStatus(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body('userIds') userIds: string[],
+        @Body('status') status: UserStatus,
+    ) {
+        const adminId = req['user'].id as string;
+        const result = await this.userService.adminChangeUserStatus(
+            userIds,
+            status,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+    // 搜索用户
+    @Get('admin-search-user')
+    async adminSearchUser( @Req() req: Request, @Res() res: Response, @Query('search') search: string){
+        const adminId = req['user'].id as string;
+        const result = await this.userService.adminSearchUser(adminId,search);
+        res.status(result.StatuCode).send(result);
+    }
+    // 管理员添加社区版主
+    @Post('admin-add-moderator')
+    async adminAddModerator(@Req() req: Request, @Res() res: Response, @Body() addModeratorDto: AdminAddModeratorDto) {
+        const adminId = req['user'].id as string;
+        const result = await this.userService.adminAddModerator( adminId,addModeratorDto);
+        res.status(result.StatuCode).send(result);
+    }
+
+    @Patch("admin-delete-moderator")
+    async adminDeleteModerator(@Req() req: Request, @Res() res: Response, @Body() deleteModeratorDto: AdminDeleteModeratorDto) {
+        const adminId = req['user'].id as string;
+        const result = await this.userService.adminDeleteModerator(adminId, deleteModeratorDto);
+        res.status(result.StatuCode).send(result);
     }
 }

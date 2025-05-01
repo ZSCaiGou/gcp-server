@@ -1,3 +1,4 @@
+import { AdminAddModeratorDto } from './dto/admin-add-moderator.dto';
 import { OssUtilService } from './../utils/oss-util/oss-util.service';
 import {
     BadRequestException,
@@ -8,7 +9,15 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DataSource, EntityManager, In, Like, Not, Repository } from 'typeorm';
+import {
+    And,
+    DataSource,
+    EntityManager,
+    In,
+    Like,
+    Not,
+    Repository,
+} from 'typeorm';
 import { User, UserStatus } from 'src/common/entity/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import bycypt from 'bcrypt';
@@ -29,6 +38,8 @@ import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { Game } from 'src/common/entity/game.entity';
 import { Topic } from 'src/common/entity/topic.entity';
 import { PaginationUserDto } from './dto/pagination-user.dto';
+import { AdminAddUserDto } from './dto/admin-add-user.dto';
+import { AdminDeleteModeratorDto } from './dto/admin-delete-moderator.dto';
 
 @Injectable()
 export class UserService {
@@ -45,7 +56,12 @@ export class UserService {
      * @param   用户信息
      * @returns  用户对象
      */
-    async create(phone: string): Promise<User> {
+    async create(
+        phone: string,
+        username?: string,
+        email?: string,
+        managed_communities?: string[],
+    ): Promise<User> {
         // 创建一个用户对象
         const user = this.manager.create(User, { phone });
         // 通过手机号生成一个默认的用户名,将中间四位替换成*
@@ -143,7 +159,7 @@ export class UserService {
 
         return Result.success(MessageConstant.SUCCESS, data);
     }
-
+    //更新用户资料
     async updateUserProfile(
         userId: string,
         updateUserProfileDto: UpdateUserProfileDto,
@@ -351,9 +367,14 @@ export class UserService {
     ) {
         // 检查是否是管理员
         const user = await this.manager.findOneBy(User, { id: userId });
-        
-        
-        if (!user?.roles.some((role) => role.role_name === 'ADMIN' || role.role_name === 'SUPER_ADMIN')) {
+
+        if (
+            !user?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
             return Result.error(
                 MessageConstant.USER_NOT_ADMIN,
                 HttpStatus.NOT_ACCEPTABLE,
@@ -375,6 +396,9 @@ export class UserService {
         if (roles) {
             where['roles'] = { role_name: In(roles.split(',')) };
         }
+        if (!status) {
+            where['status'] = Not(ContentStatus.DELETED);
+        }
         // 排序条件
         const order = {};
         if (sortField) {
@@ -395,10 +419,11 @@ export class UserService {
                 return {
                     id: user.id,
                     username: user.username,
-                    phone:
-                        user.phone.substring(0, 3) +
-                        '****' +
-                        user.phone.substring(7, 11),
+                    phone: user.phone
+                        ? user.phone.substring(0, 3) +
+                          '****' +
+                          user.phone.substring(7, 11)
+                        : null,
                     email: user.email,
                     status: user.status,
                     role: user.roles[0].role_name,
@@ -428,7 +453,13 @@ export class UserService {
     ) {
         // 检查是否是管理员
         const admin = await this.manager.findOneBy(User, { id: adminId });
-        if (!admin?.roles.some((role) => role.role_name === 'ADMIN' || role.role_name === 'SUPER_ADMIN')) {
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
             return Result.error(
                 MessageConstant.USER_NOT_ADMIN,
                 HttpStatus.NOT_ACCEPTABLE,
@@ -482,6 +513,19 @@ export class UserService {
             },
         });
         userToUpdate.managed_communities = manage_games;
+        // 如果用户角色不为MODERATOR，则清空管理的社区
+        if (userToUpdate.roles[0].role_name !== 'MODERATOR') {
+            userToUpdate.managed_communities = [];
+        }
+        // 如果用户管理的社区为空，则将用户角色设置为USER
+        if (userToUpdate.managed_communities.length === 0) {
+            userToUpdate.roles = [
+                (await this.manager.findOneBy(Role, {
+                    role_name: 'USER',
+                })) as Role,
+            ];
+        }
+
         const result = await this.manager.save(userToUpdate);
         // 更新用户信息
         return Result.success(MessageConstant.SUCCESS, {
@@ -490,10 +534,11 @@ export class UserService {
             email: result.email,
             status: result.status,
             role: result.roles[0].role_name,
-            phone:
-                result.phone.substring(0, 3) +
-                '****' +
-                result.phone.substring(7, 11),
+            phone: result.phone
+                ? result.phone.substring(0, 3) +
+                  '****' +
+                  result.phone.substring(7, 11)
+                : null,
             managed_communities: result.managed_communities.map((game) => ({
                 title: game.title,
                 id: game.id,
@@ -502,5 +547,454 @@ export class UserService {
             create_time: result.create_time,
             last_login_time: result.last_login_time,
         });
+    }
+    // 管理员添加用户
+    async addAdminUser(addUserDto: AdminAddUserDto, adminId: string) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminId });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        const { username, email, role, managed_communities } = addUserDto;
+        // 验证角色是否存在
+        const updateRole = await this.manager.findOneBy(Role, {
+            role_name: role,
+        });
+        if (!updateRole) {
+            return Result.error(
+                MessageConstant.ROLE_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证是否有创建管理员用户的权限
+        if (
+            (updateRole.role_name === 'ADMIN' ||
+                updateRole.role_name === 'SUPER_ADMIN') &&
+            admin.roles[0].role_name !== 'SUPER_ADMIN'
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_SUPER_ADMIN,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证社区是否存在
+        const manage_games = await this.manager.find(Game, {
+            where: {
+                id: In(managed_communities.map((item) => item.id)),
+            },
+        });
+        if (manage_games.length !== managed_communities.length) {
+            return Result.error(
+                MessageConstant.GAME_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证用户名是否存在
+        const count = await this.manager.countBy(User, { username });
+        if (count > 0) {
+            return Result.error(
+                MessageConstant.USERNAME_ALREADY_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证邮箱是否存在
+        const countEmail = await this.manager.countBy(User, { email });
+        if (countEmail > 0) {
+            return Result.error(
+                MessageConstant.EMAIL_ALREADY_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 创建用户
+        const user = new User();
+        user.username = username;
+        user.email = email;
+        user.status = UserStatus.ACTIVE;
+        // 使用uuid生成一个默认密码
+        const ps = randomUUID();
+
+        // 加密密码
+        const salt = await bycypt.genSalt();
+        user.password = await bycypt.hash(ps, salt);
+        user.last_login_time = new Date();
+        // 初始化用户角色
+        user.roles = [updateRole];
+        // 初始化用户资料
+        const userProfle = this.manager.create(UserProfile, {
+            avatar_url: DEFAULT_AVATAR_URL,
+        });
+        user.profile = userProfle;
+
+        // 初始化用户等级
+        const userLevel = this.manager.create(UserLevel, {});
+        user.level = userLevel;
+
+        // 初始化用户管理的社区
+        user.managed_communities = manage_games;
+        if (user.managed_communities.length === 0) {
+            user.roles = [
+                (await this.manager.findOneBy(Role, {
+                    role_name: 'USER',
+                })) as Role,
+            ];
+        }
+        // 保存用户对象到数据库
+        const resultUser = await this.manager.save(user);
+        // 格式化返回数据
+        return Result.success(MessageConstant.SUCCESS, {
+            id: resultUser.id,
+            username: resultUser.username,
+            email: resultUser.email,
+            status: resultUser.status,
+            role: resultUser.roles[0].role_name,
+            phone: resultUser.phone
+                ? resultUser.phone.substring(0, 3) +
+                  '****' +
+                  resultUser.phone.substring(7, 11)
+                : null,
+            managed_communities: resultUser.managed_communities.map((game) => ({
+                title: game.title,
+                id: game.id,
+                key: game.id,
+            })),
+            create_time: resultUser.create_time,
+            last_login_time: resultUser.last_login_time,
+        });
+    }
+    // 管理员删除用户
+    async adminDeleteUser(userIds: string[], adminId: string) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminId });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        // 检查要删除的用户是否包含自己
+        if (userIds.includes(adminId)) {
+            return Result.error(
+                MessageConstant.ADMIN_CAN_NOT_DELETE_SELF,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 找到要删除的用户
+        const usersToDelete = await this.manager.find(User, {
+            where: {
+                id: In(userIds),
+            },
+        });
+        // 验证用户是否存在
+        if (usersToDelete.length !== userIds.length) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证待删除的用户中是否有超级管理员
+        if (
+            usersToDelete.some((user) =>
+                user.roles.some(
+                    (role) =>
+                        role.role_name === 'ADMIN' ||
+                        role.role_name === 'SUPER_ADMIN',
+                ),
+            )
+        ) {
+            // 只有超级管理员才能删除管理员
+            if (admin.roles[0].role_name !== 'SUPER_ADMIN') {
+                return Result.error(
+                    MessageConstant.USER_NOT_SUPER_ADMIN,
+                    HttpStatus.BAD_REQUEST,
+                    null,
+                );
+            }
+        }
+        const userToSave = usersToDelete.map((user) => {
+            user.status = UserStatus.DELETED;
+            return user;
+        });
+        // 删除用户（软删除，状态置为删除）
+        await this.manager.save(userToSave);
+
+        // 格式化返回数据
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+
+    // 管理员改变用户状态
+    async adminChangeUserStatus(
+        userIds: string[],
+        status: UserStatus,
+        adminId: string,
+    ) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminId });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        // 验证待修改状态的用户是否包含自己
+        if (userIds.includes(adminId)) {
+            return Result.error(
+                MessageConstant.ADMIN_CAN_NOT_CHANGE_SELF_STATUS,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 找到要修改状态的用户
+        const usersToUpdate = await this.manager.find(User, {
+            where: {
+                id: In(userIds),
+            },
+        });
+        // 验证用户是否存在
+        if (usersToUpdate.length !== userIds.length) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+
+        // 验证待修改状态的用户中是否有超级管理员
+        if (
+            usersToUpdate.some((user) =>
+                user.roles.some(
+                    (role) =>
+                        role.role_name === 'ADMIN' ||
+                        role.role_name === 'SUPER_ADMIN',
+                ),
+            )
+        ) {
+            // 只有超级管理员才能修改管理员状态
+            if (admin.roles[0].role_name !== 'SUPER_ADMIN') {
+                return Result.error(
+                    MessageConstant.USER_NOT_SUPER_ADMIN,
+                    HttpStatus.BAD_REQUEST,
+                    null,
+                );
+            }
+        }
+        const userToSave = usersToUpdate.map((user) => {
+            user.status = status;
+            return user;
+        });
+        // 修改用户状态
+        await this.manager.save(userToSave);
+
+        // 格式化返回数据
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+    // 管理员添加版主搜索用户
+    async adminSearchUser(adminID: string, search: string) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminID });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        const users = await this.manager.find(User, {
+            where: {
+                username: Like(`%${search}%`),
+                roles:{
+                    role_name: In(["USER","MODERATOR"])
+                }
+            },
+        });
+        const data = users.map((user) => {
+            return {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                avatar_url: user.profile.avatar_url,
+            };
+        });
+        return Result.success(MessageConstant.SUCCESS, data);
+    }
+    // 管理员添加版主
+    async adminAddModerator(
+        adminID: string,
+        adminAddModeratorDto: AdminAddModeratorDto,
+    ) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminID });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        const { user_id, community_id } = adminAddModeratorDto;
+        // 找到用户
+        const user = await this.manager.findOneBy(User, { id: user_id });
+        // 验证用户是否存在
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 如果用户角色为ADMIN或SUPER_ADMIN，则不能成为版主
+        if(user.roles[0].role_name === "ADMIN" || user.roles[0].role_name === "SUPER_ADMIN"){
+            return Result.error(
+                MessageConstant.ADMIN_NOT_ALLOW_BECOME_MODERATOR,
+                HttpStatus.BAD_REQUEST,
+                null,
+                );
+        }
+        // 找到游戏
+        const game = await this.manager.findOneBy(Game, { id: community_id });
+        // 验证游戏是否存在
+        if (!game) {
+            return Result.error(
+                MessageConstant.GAME_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证用户是否已经是游戏的版主
+        if (user.managed_communities.some((item) => item.id === community_id)) {
+            return Result.error(
+                MessageConstant.USER_ALREADY_MOD,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 添加游戏版主
+        user.managed_communities.push(game);
+        const savedUser = await this.manager.save(user);
+        // 添加版主数量
+
+        // 格式化返回数据
+        return Result.success(MessageConstant.SUCCESS, {
+            id: savedUser.id,
+            username: savedUser.username,
+            email: savedUser.email,
+            avatar_url: savedUser.profile.avatar_url,
+        });
+    }
+    // 管理员删除版主
+    async adminDeleteModerator(
+        adminID: string,
+        adminDeleteModeratorDto: AdminDeleteModeratorDto,
+    ) {
+        // 检查是否是管理员
+        const admin = await this.manager.findOneBy(User, { id: adminID });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        const { user_id, community_id } = adminDeleteModeratorDto;
+        // 找到用户
+        const user = await this.manager.findOneBy(User, { id: user_id });
+        // 验证用户是否存在
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 找到游戏
+        const game = await this.manager.findOneBy(Game, { id: community_id });
+        // 验证游戏是否存在
+        if (!game) {
+            return Result.error(
+                MessageConstant.GAME_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 验证用户是否已经是游戏的版主
+        if (
+            !user.managed_communities.some((item) => item.id === community_id)
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_MOD,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 删除游戏版主
+        user.managed_communities = user.managed_communities.filter(
+            (item) => item.id !== community_id,
+        );
+        // 管理社区数量为0时，设置为USER角色
+        if (user.managed_communities.length === 0) {
+            const role = await this.manager.findOneBy(Role, {
+                role_name: 'USER',
+            });
+            if (role) {
+                user.roles = [role];
+            }
+        }
+        await this.manager.save(user);
+        await this.manager.increment(
+            Game,
+            { id: community_id },
+            'moderator_count',
+            -1,
+        );
+        // 格式化返回数据
+        return Result.success(MessageConstant.SUCCESS, null);
     }
 }

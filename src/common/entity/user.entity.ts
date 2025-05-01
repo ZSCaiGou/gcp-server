@@ -51,6 +51,7 @@ export class User {
         type: 'varchar',
         length: 50,
         comment: '手机号',
+        default: null,
     })
     phone: string;
 

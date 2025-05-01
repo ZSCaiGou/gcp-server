@@ -22,6 +22,7 @@ export class OssUtilService {
             });
         }
     }
+    // 上传用户头像
     async uploadAvatar(file: Express.Multer.File, fileName: string) {
         if (!this.ossClient) {
             throw new Error('oss client not init');
@@ -32,7 +33,7 @@ export class OssUtilService {
         );
         return result.url;
     }
-
+    // 上传用户内容封面
     async uploadUserContentCover(file: Express.Multer.File, fileName: string) {
         if (!this.ossClient) {
             throw new Error('oss client not init');
@@ -43,7 +44,7 @@ export class OssUtilService {
         );
         return result.url;
     }
-
+    // 上传用户内容图片
     async uploadUserContentPicture(
         file: Express.Multer.File,
         fileName: string,
@@ -58,6 +59,18 @@ export class OssUtilService {
         return result.url;
     }
 
+    async uploadCommunityImg(file: Express.Multer.File, fileName: string) {
+        if (!this.ossClient) {
+            throw new Error('oss client not init');
+        }
+        const result = await this.ossClient.put(
+            'community-img/' + fileName,
+            file.buffer,
+        );
+        return result.url;
+    }
+
+    // 删除用户头像
     async deleteUserContentPicture(pictureUrl: string) {
         if (!this.ossClient) {
             throw new Error('oss client not init');

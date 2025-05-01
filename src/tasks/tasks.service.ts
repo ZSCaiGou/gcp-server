@@ -3,7 +3,9 @@ import {
     TextModerationPlusResponse,
 } from '@alicloud/green20220302';
 import { Injectable, Logger } from '@nestjs/common';
-import { Interval, Timeout } from '@nestjs/schedule';
+import { Cron, CronExpression, Interval, Timeout } from '@nestjs/schedule';
+import { TimeInterval } from 'rxjs/internal/operators/timeInterval';
+import { Game } from 'src/common/entity/game.entity';
 import {
     ContentStatus,
     UserContent,
@@ -64,5 +66,26 @@ export class TasksService {
                 this.logger.log('没有待检测内容');
             }
         });
+    }
+    // 每周一凌晨 00:00 减少社区热度为原来的80%
+    @Cron(CronExpression.EVERY_WEEK)
+    async handleWeeklyDecreaseeCommunityHotPoint(){
+        this.logger.log('开始减少社区热度');
+        const communityList = await this.manager.find(Game, {
+            order: {
+                created_at: 'ASC',
+            },
+        });
+        if (communityList.length === 0) {
+            this.logger.log('没有待减少热度的社区');
+            return;
+        }
+        communityList.map((community)=>{
+            if(community.hot_point>0){
+                community.hot_point = Math.floor(community.hot_point*0.8);
+            }
+        })
+        await this.manager.save(communityList);
+        this.logger.log('减少社区热度完成');
     }
 }

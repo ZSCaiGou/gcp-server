@@ -1,5 +1,11 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
+export enum GameStatus {
+    ACTIVE = 'active',
+    DISABLED = 'disabled',
+    DELETED = 'deleted',
+}
+
 @Entity({
     comment: '游戏(社区)信息',
 })
@@ -49,4 +55,37 @@ export class Game {
         type: 'varchar',
     })
     game_img_url: string;
+
+    @Column({
+        comment:"创建时间",
+        type:"timestamp",
+        default:()=>"CURRENT_TIMESTAMP"
+    })
+    created_at:Date;
+    @Column({
+        comment:"更新时间",
+        type:"timestamp",
+        default:()=>"CURRENT_TIMESTAMP",
+        onUpdate:"CURRENT_TIMESTAMP"
+    })
+    last_updated_at:Date;
+    @Column({
+        comment:"成员数量",
+        type:"int",
+        default:0
+    })
+    member_count:number;
+    @Column({
+        comment:"版主数量",
+        type:"int",
+        default:0
+    })
+    moderator_count:number;
+    @Column({
+        comment:"状态",
+        type:"enum",
+        enum:GameStatus,
+        default:GameStatus.ACTIVE
+    })
+    status: GameStatus;
 }
