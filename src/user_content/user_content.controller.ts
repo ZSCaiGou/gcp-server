@@ -59,10 +59,10 @@ export class UserContentController {
         res.status(result.StatuCode).send(result);
     }
     // 获取主页用户内容
-    @Get('main-user-content')
+    @Get('random-content')
     @Public()
-    async getMainUserContent(@Req() req: Request, @Res() res: Response) {
-        const result = await this.userContentService.getMainUserContent();
+    async getMainUserContent(@Req() req: Request, @Res() res: Response,@Param('count') count: number) {
+        const result = await this.userContentService.getMainUserContent(count);
         res.status(result.StatuCode).send(result);
     }
 

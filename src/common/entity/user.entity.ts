@@ -5,6 +5,7 @@ import {
     JoinColumn,
     JoinTable,
     ManyToMany,
+    OneToMany,
     OneToOne,
     PrimaryColumn,
 } from 'typeorm';
@@ -13,6 +14,8 @@ import { Permission } from './permission.entity';
 import { UserProfile } from './user_profile.entity';
 import { UserLevel } from './user_level.entity';
 import { Game } from './game.entity';
+import { ModeratorRequest } from './moderator_request.entity';
+import { UserLog } from './user_log.entity';
 
 export enum UserStatus {
     ACTIVE = 'active',
@@ -63,6 +66,12 @@ export class User {
     })
     password: string;
 
+    @Column({
+        type: 'boolean',
+        default: true,
+        comment: '是否为默认密码',
+    })
+    is_default_password: boolean;
     @Column({
         type: 'timestamp',
         comment: '创建时间',
@@ -124,4 +133,13 @@ export class User {
     })
     @JoinColumn()
     level: UserLevel;
+
+    // 用户版主申请
+    @OneToMany(() => ModeratorRequest, (request) => request.user, {})
+    moderator_requests: ModeratorRequest[];
+
+    @OneToMany(() => UserLog, (log) => log.user, {
+        eager: true,
+    })
+    logs: UserLog[]
 }

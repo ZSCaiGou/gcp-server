@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, PrimaryColumn, JoinTable } from 'typeorm';
 import { Game } from './game.entity';
 import { Topic } from './topic.entity';
 
@@ -65,6 +65,18 @@ export class UserContent {
         default: null,
     })
     topic_ids: string[];
+    
+    @ManyToMany(() => Game, {
+        eager: true,
+    })
+    @JoinTable()
+    target_communities: Game[]; // 关联的游戏社区
+
+    @ManyToMany(() => Topic, {
+        eager: true,
+    })
+    @JoinTable()
+    target_topics: Topic[]; // 关联的话题
 
     @Column({
         comment: '用户内容类型',
@@ -123,7 +135,6 @@ export class UserContent {
     })
     update_time: Date;
 
-
     @Column({
         comment: '审核结果',
         type: 'text',
@@ -133,20 +144,20 @@ export class UserContent {
 
     @Column({
         comment: '点赞数',
-        type: "int",
+        type: 'int',
         default: 0,
     })
-    like_count:number;
+    like_count: number;
     @Column({
         comment: '收藏数',
-        type: "int",
+        type: 'int',
         default: 0,
     })
-    collect_count:number;
+    collect_count: number;
     @Column({
         comment: '评论数',
-        type: "int",
+        type: 'int',
         default: 0,
     })
-    comment_count:number;
+    comment_count: number;
 }

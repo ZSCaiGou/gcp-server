@@ -34,6 +34,11 @@ import {
     InteractionType,
     TargetType,
 } from 'src/common/entity/interaction.entity';
+import { PaginationModeratorRequestDto } from './dto/pagination-moderator-request.dto';
+import {
+    ModeratorRequest,
+    ModeratorRequestStatus,
+} from 'src/common/entity/moderator_request.entity';
 
 @Injectable()
 export class GameService {
@@ -802,5 +807,165 @@ export class GameService {
                 avatar_url: m.profile.avatar_url,
             })),
         );
+    }
+    // 管理员分页获取版主申请列表
+    async adminGetModeratorRequestsPaginated(
+        paginationModeratorRequestDto: PaginationModeratorRequestDto,
+        adminId: string,
+    ) {
+        // 判断是否是管理员
+        const admin = await this.manager.findOneBy(User, {
+            id: adminId,
+        });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        const { page, pageSize, sortField, sortOrder, search, status } =
+            paginationModeratorRequestDto;
+        const skip = (page - 1) * pageSize;
+        const take = pageSize;
+
+        const where = {};
+        if (status) {
+            where['status'] = In(status.split(','));
+        }
+        if (search) {
+            where['username'] = Like(`%${search}%`);
+        }
+
+        const order = {};
+        if (sortField) {
+            if (sortField !== 'username') {
+                order[sortField] = sortOrder === 'asc' ? 'ASC' : 'DESC';
+            }
+        }
+
+        const [moderatorRequests, total] = await this.manager.findAndCount(
+            ModeratorRequest,
+            {
+                where: {
+                    status: In(
+                        status
+                            ? status.split(',')
+                            : [ModeratorRequestStatus.PENDING],
+                    ),
+                    user: {
+                        username: search ? Like(`%${search}%`) : undefined,
+                    },
+                },
+                order,
+                skip,
+                take,
+                relations: {
+                    user: true,
+                },
+            },
+        );
+        const result = await Promise.all(
+            moderatorRequests.map(async (request) => {
+                const target_community = (await this.manager.findOneBy(Game, {
+                    id: request.target_community_id,
+                })) as Game;
+                return {
+                    id: request.id,
+                    username: request.user.username,
+                    community: target_community.title,
+                    status: request.status,
+                    created_at: request.created_at,
+                };
+            }),
+        );
+        return Result.success(MessageConstant.SUCCESS, {
+            items: result,
+            total,
+            page,
+            pageSize,
+        });
+    }
+
+    // 管理员处理版主申请
+    async adminHandleModeratorRequest(
+        adminId: string,
+        moderatorRequestId: number,
+        status: ModeratorRequestStatus,
+    ) {
+        // 判断是否是管理员
+        const admin = await this.manager.findOneBy(User, {
+            id: adminId,
+        });
+        if (
+            !admin?.roles.some(
+                (role) =>
+                    role.role_name === 'ADMIN' ||
+                    role.role_name === 'SUPER_ADMIN',
+            )
+        ) {
+            return Result.error(
+                MessageConstant.USER_NOT_ADMIN,
+                HttpStatus.NOT_ACCEPTABLE,
+                null,
+            );
+        }
+        // 判断是否存在
+        const moderatorRequest = await this.manager.findOneBy(
+            ModeratorRequest,
+            {
+                id: moderatorRequestId,
+            },
+        );
+        if (!moderatorRequest) {
+            return Result.error(
+                MessageConstant.MODERATOR_REQUEST_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                null,
+            );
+        }
+        // 判断是否已经处理过
+        if (moderatorRequest.status !== ModeratorRequestStatus.PENDING) {
+            return Result.error(
+                MessageConstant.MODERATOR_REQUEST_ALREADY_HANDLED,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 判断对应社区是否存在
+        const community = await this.manager.findOneBy(Game, {
+            id: moderatorRequest.target_community_id,
+        });
+        if (!community) {
+            return Result.error(
+                MessageConstant.COMMUNITY_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                null,
+            )
+        }
+        // 判断用户以及管理了该社区
+        const user = moderatorRequest.user;
+        if (user.managed_communities.some((c) => c.id === community.id)) {
+            return Result.error(
+                MessageConstant.USER_ALREADY_MOD,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 处理
+        if (status === ModeratorRequestStatus.APPROVED) {
+            // 添加到社区管理列表中
+            user.managed_communities.push(community);
+            await this.manager.save(user);
+        }
+        moderatorRequest.status = status;
+        await this.manager.save(moderatorRequest);
+        return Result.success(MessageConstant.SUCCESS, null);
     }
 }

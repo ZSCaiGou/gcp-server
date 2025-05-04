@@ -24,6 +24,8 @@ import { AdminCreateCommunityDto } from './dto/admin-create-community.dto';
 import { GameStatus } from 'src/common/entity/game.entity';
 import { AdminUpdateCommunityDto } from './dto/admin-update-community.dto';
 import { PaginationFollowUserDto } from './dto/pagination-follow-user.dto';
+import { PaginationModeratorRequestDto } from './dto/pagination-moderator-request.dto';
+import { ModeratorRequestStatus } from 'src/common/entity/moderator_request.entity';
 
 @Controller('game')
 export class GameController {
@@ -249,6 +251,39 @@ export class GameController {
     async adminGetModerators(@Param('communityId') communityId: bigint, @Req() req: Request, @Res() res: Response) {
         const adminId = req['user'].id as string;
         const result = await this.gameService.adminGetModerators(communityId, adminId);
+        res.status(result.StatuCode).send(result);
+    }
+
+
+    // 管理员分页获取版主申请列表
+    @Get('admin-get-moderator-requests')
+    async adminGetModeratorRequestsPaginated(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Query() paginationModeratorRequestDto: PaginationModeratorRequestDto,
+    ){
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminGetModeratorRequestsPaginated(
+            paginationModeratorRequestDto,
+            adminId,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+
+    // 管理员处理版主申请
+    @Patch('admin-handle-moderator-request')
+    async adminHandleModeratorRequest(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body("request_id") requestId: number,
+        @Body("status") status: ModeratorRequestStatus,
+    ){
+        const adminId = req['user'].id as string;
+        const result = await this.gameService.adminHandleModeratorRequest(
+            adminId,
+            requestId,
+            status ,
+        );
         res.status(result.StatuCode).send(result);
     }
 }

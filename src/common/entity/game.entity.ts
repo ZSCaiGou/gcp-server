@@ -88,4 +88,6 @@ export class Game {
         default:GameStatus.ACTIVE
     })
     status: GameStatus;
+
+    logs
 }

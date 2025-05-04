@@ -68,8 +68,8 @@ export class UserController {
 
     @Get('getVerifyCode')
     @Public()
-    async getVerifyCode(@Query('phone') phone: string, @Res() res: Response) {
-        const result = await this.authService.getVerifyCode(phone);
+    async getVerifyCode(@Query('email') email: string, @Res() res: Response) {
+        const result = await this.authService.getVerifyCode(email);
         res.status(result.StatuCode).send(result);
     }
 
@@ -77,6 +77,12 @@ export class UserController {
     async getUserData(@Req() req: Request, @Res() res: Response) {
         const userId = req['user'].id as string;
         const result = await this.userService.getUserData(userId);
+        res.status(result.StatuCode).send(result);
+    }
+    @Get('get-user-by-id/:id')
+    @Public()
+    async getUserById(@Param('id') id: string, @Res() res: Response, @Req() req: Request){
+        const result = await this.userService.findOneById(id);
         res.status(result.StatuCode).send(result);
     }
 
@@ -107,17 +113,17 @@ export class UserController {
         res.status(result.StatuCode).send(result);
     }
 
-    @Get('dynamic')
-    async getUserDynamicContentList(@Req() req: Request, @Res() res: Response) {
+    @Get('dynamic/:id')
+    async getUserDynamicContentList(@Req() req: Request, @Res() res: Response,@Param('id') id: string) {
         const userId = req['user'].id as string;
-        const result = await this.userService.getUserDynamicContentList(userId);
+        const result = await this.userService.getUserDynamicContentList(id);
         res.status(result.StatuCode).send(result);
     }
 
-    @Get('upload')
-    async getUserUploadContentList(@Req() req: Request, @Res() res: Response) {
+    @Get('upload/:id')
+    async getUserUploadContentList(@Req() req: Request, @Res() res: Response, @Param('id') id: string) {
         const userId = req['user'].id as string;
-        const result = await this.userService.getUserUploadContentList(userId);
+        const result = await this.userService.getUserUploadContentList(id);
         res.status(result.StatuCode).send(result);
     }
     @Get('admin-users-paginated')

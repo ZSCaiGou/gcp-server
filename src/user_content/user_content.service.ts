@@ -49,6 +49,22 @@ export class UserContentService {
             ...createUserContentDto,
             user_id,
         });
+        // 用户内容只能选择一个社区或者话题
+        if(userContent.game_ids.length > 1){
+            return Result.error(
+                MessageConstant.USER_CONTENT_ALLOW_HAVE_ONE_COMMUNITY,
+                HttpStatus.BAD_REQUEST,
+                null,
+            )
+        }
+        const communitys = await this.manager.find(Game, {
+            where: { id: In(userContent.game_ids) },
+        });
+        userContent.target_communities = communitys;
+        const toipcs = await this.manager.find(Topic, {
+            where: { id: In(userContent.topic_ids) },
+        });
+        userContent.target_topics = toipcs;
         // 保持内容
         const savedUserContent = await this.manager.save(userContent);
 
@@ -97,7 +113,7 @@ export class UserContentService {
         return Result.success(MessageConstant.SUCCESS, { url: ossUrl });
     }
     // 获取主页内容
-    async getMainUserContent() {
+    async getMainUserContent(count: number) {
         // #TODO 实现推荐算法
 
         const userContentList = await this.manager.find(UserContent, {
@@ -107,7 +123,7 @@ export class UserContentService {
             order: {
                 create_time: 'DESC',
             },
-            take: 10,
+            take: count,
         });
         // 获取返回数据
         const data = await Promise.all(
@@ -154,7 +170,7 @@ export class UserContentService {
                 };
             }),
         );
-
+            
         return Result.success(MessageConstant.SUCCESS, data);
     }
 

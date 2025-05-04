@@ -57,16 +57,14 @@ export class UserService {
      * @returns  用户对象
      */
     async create(
-        phone: string,
+        email: string,
         username?: string,
-        email?: string,
         managed_communities?: string[],
     ): Promise<User> {
         // 创建一个用户对象
-        const user = this.manager.create(User, { phone });
-        // 通过手机号生成一个默认的用户名,将中间四位替换成*
-        user.username =
-            'user_' + phone.substring(0, 3) + '****' + phone.substring(7, 11);
+        const user = this.manager.create(User, { email });
+        // 通过数据表中用户的个数来生成一个默认的用户名,
+        user.username = `user_${await this.manager.count(User)}`;
 
         // 使用uuid生成一个默认密码
         const ps = randomUUID();
@@ -108,13 +106,26 @@ export class UserService {
      * @returns  用户对象
      */
     async findOneByType(value: string, type: LoginType) {
+        const where = {};
+        if (type === LoginType.VERIFY_CODE) {
+            where['email'] = value;
+        }
+        if (type === LoginType.USERNAME) {
+            if (value.includes('@')) {
+                where['email'] = value;
+            } else {
+                where['username'] = value;
+            }
+        }
         // 根据用户名、邮箱、手机号查找用户
-        const user = await this.manager.findOneBy(User, {
-            [type]: value,
+        const user = await this.manager.findOne(User, {
+            where,
         });
         return user;
     }
-
+    async findOneById(userId: string) {
+        return await this.getUserData(userId);
+    }
     /**
      *  获取用户信息
      */
@@ -147,14 +158,16 @@ export class UserService {
         const data = {
             id: user.id,
             username: user.username,
-            phone:
-                user.phone.substring(0, 3) +
-                '****' +
-                user.phone.substring(7, 11),
+            phone: user.phone
+                ? user.phone.substring(0, 3) +
+                  '****' +
+                  user.phone.substring(7, 11)
+                : null,
             email: user.email,
             profile: user.profile,
             level: user.level,
             roles: user.roles.map((role) => role.role_name),
+            is_default_password: user.is_default_password,
         };
 
         return Result.success(MessageConstant.SUCCESS, data);
@@ -838,9 +851,9 @@ export class UserService {
         const users = await this.manager.find(User, {
             where: {
                 username: Like(`%${search}%`),
-                roles:{
-                    role_name: In(["USER","MODERATOR"])
-                }
+                roles: {
+                    role_name: In(['USER', 'MODERATOR']),
+                },
             },
         });
         const data = users.map((user) => {
@@ -885,12 +898,15 @@ export class UserService {
             );
         }
         // 如果用户角色为ADMIN或SUPER_ADMIN，则不能成为版主
-        if(user.roles[0].role_name === "ADMIN" || user.roles[0].role_name === "SUPER_ADMIN"){
+        if (
+            user.roles[0].role_name === 'ADMIN' ||
+            user.roles[0].role_name === 'SUPER_ADMIN'
+        ) {
             return Result.error(
                 MessageConstant.ADMIN_NOT_ALLOW_BECOME_MODERATOR,
                 HttpStatus.BAD_REQUEST,
                 null,
-                );
+            );
         }
         // 找到游戏
         const game = await this.manager.findOneBy(Game, { id: community_id });

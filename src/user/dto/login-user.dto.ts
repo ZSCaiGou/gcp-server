@@ -2,8 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { isEmpty, IsNotEmpty, IsString } from 'class-validator';
 
 export enum LoginType {
-    EMAIL = 'email',
-    PHONE = 'phone',
+    VERIFY_CODE = 'verifyCode',
     USERNAME = 'username',
 }
 

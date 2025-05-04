@@ -1,3 +1,4 @@
+import { OpenAIService } from './../utils/openai/openai.service';
 import {
     TextModerationResponse,
     TextModerationPlusResponse,
@@ -20,6 +21,7 @@ export class TasksService {
     constructor(
         private readonly greenService: GreenService,
         private readonly dataSouce: DataSource,
+        private readonly openAIService: OpenAIService,
     ) {
         this.manager = this.dataSouce.manager;
     }
@@ -43,25 +45,35 @@ export class TasksService {
         userContentList.forEach(async (userContent) => {
             if (userContent) {
                 const content = userContent.content;
-                const result: TextModerationPlusResponse =
-                    await this.greenService.contentScan(content);
-                console.log(result.body);
-                
-                if (result.body?.data?.riskLevel === 'none') {
+                const result = await this.openAIService.contetnReview(content);
+
+                if(result.level === "none"){
                     userContent.status = ContentStatus.APPROVED;
                     // #TODO 增加积分奖励
-                } else {
-                    userContent.check_result =
-                        result.body?.data?.result?.[0].description || '';
+                }else{
+                    userContent.check_result = result.reason;
                     userContent.status = ContentStatus.REJECTED;
-                    this.logger.log(
-                        `内容违规，id：${userContent.id} 结果：${userContent.check_result}`,
-                    );
                 }
                 await this.manager.save(userContent);
-                this.logger.log(
-                    `内容检测完成，id：${userContent.id} 状态：${userContent.status}`,
-                );
+                // const result: TextModerationPlusResponse =
+                //     await this.greenService.contentScan(content);
+                // console.log(result.body);
+                
+                // if (result.body?.data?.riskLevel === 'none') {
+                //     userContent.status = ContentStatus.APPROVED;
+                //     // #TODO 增加积分奖励
+                // } else {
+                //     userContent.check_result =
+                //         result.body?.data?.result?.[0].description || '';
+                //     userContent.status = ContentStatus.REJECTED;
+                //     this.logger.log(
+                //         `内容违规，id：${userContent.id} 结果：${userContent.check_result}`,
+                //     );
+                // }
+                // await this.manager.save(userContent);
+                // this.logger.log(
+                //     `内容检测完成，id：${userContent.id} 状态：${userContent.status}`,
+                // );
             } else {
                 this.logger.log('没有待检测内容');
             }

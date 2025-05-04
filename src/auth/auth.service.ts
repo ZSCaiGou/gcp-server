@@ -1,3 +1,4 @@
+import { SmtpService } from './../utils/smtp/smtp.service';
 import bycypt from 'bcrypt';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { LoginType, LoginUserDto } from 'src/user/dto/login-user.dto';
@@ -16,6 +17,7 @@ export class AuthService {
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
         @InjectRedis() private readonly redisClient: Redis,
+        private readonly smtpService: SmtpService,
     ) {}
     /**
      * 验证用户
@@ -35,7 +37,7 @@ export class AuthService {
         const { type, password, account } = loginUserDto;
 
         // 验证码登录
-        if (type === LoginType.PHONE) {
+        if (type === LoginType.VERIFY_CODE) {
             // 从redis中获取验证码
             const code = await this.redisClient.get(account);
             // 验证码不存在或者过期
@@ -53,8 +55,8 @@ export class AuthService {
 
         // 用户不存在
         if (!user) {
-            // 登录类型为手机号
-            if (type === LoginType.PHONE) {
+            // 登录类型为验证码
+            if (type === LoginType.VERIFY_CODE) {
                 // 创建新用户
                 user = await this.userService.create(account);
             } else {
@@ -69,7 +71,7 @@ export class AuthService {
         // 校验密码
         if (
             (await bycypt.compare(password, user.password)) ||
-            type === LoginType.PHONE
+            type === LoginType.VERIFY_CODE
         ) {
             // 生成token
             const payload = { id: user.id };
@@ -88,19 +90,12 @@ export class AuthService {
         );
     }
     // 获取验证码
-    async getVerifyCode(phone: string) {
-        if (!phone || phone.length !== 11 || !/^\d+$/.test(phone)) {
-            return Result.error(
-                MessageConstant.ILLEGAL_VALUE,
-                HttpStatus.BAD_REQUEST,
-                null,
-            );
-        }
-
-        // #TODO 使用api接口发送验证码
+    async getVerifyCode(email: string) {
         // 生成验证码
         const code = Math.floor(Math.random() * 1000000).toString();
-        await this.redisClient.setex(phone, 60, code);
+        await this.redisClient.setex(email, 300, code);
+        // 发送验证码
+        // this.smtpService.sendEmail(email, '验证码', `您正在登录/注册，验证码为：${code}，5分钟内有效。`);
         this.logger.log(`验证码：${code}`);
 
         return Result.success(MessageConstant.SUCCESS, null);

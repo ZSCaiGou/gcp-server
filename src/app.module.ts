@@ -26,6 +26,10 @@ import { RewardModule } from './reward/reward.module';
 import { SupportModule } from './support/support.module';
 import { CommunityacitonModule } from './communityaciton/communityaciton.module';
 import { CommentModule } from './comment/comment.module';
+import { ModeratorModule } from './moderator/moderator.module';
+import { SmtpModule } from './utils/smtp/smtp.module';
+import { SafeModule } from './safe/safe.module';
+import { OpenAIModule } from './utils/openai/openai.module';
 
 @Module({
     imports: [
@@ -72,6 +76,10 @@ import { CommentModule } from './comment/comment.module';
         SupportModule,
         CommunityacitonModule,
         CommentModule,
+        ModeratorModule,
+        SmtpModule,
+        SafeModule,
+        OpenAIModule
     ],
     controllers: [AppController],
     providers: [AppService],

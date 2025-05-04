@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { ConfigKey } from 'src/common/constants';
 import { CaslGuard } from 'src/common/guard/casl.guard';
+import { SmtpModule } from 'src/utils/smtp/smtp.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { CaslGuard } from 'src/common/guard/casl.guard';
             }),
             inject: [ConfigService],
         }),
+        SmtpModule
     ],
     providers: [
         AuthService,
