@@ -22,4 +22,10 @@ export class SystemLog {
         comment: '日志内容',
     })
     content: string;
+    @Column({
+        type: 'timestamp',
+        comment: '创建时间',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
+    created_at: Date;
 }

@@ -4,7 +4,10 @@ import {
     PrimaryGeneratedColumn,
     Generated,
     PrimaryColumn,
+    ManyToOne,
+    JoinColumn,
 } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity({
     comment: '话题表',
@@ -23,12 +26,9 @@ export class Topic {
     })
     title: string;
 
-    @Column({
-        type: 'varchar',
-        length: 36,
-        comment: '话题作者ID',
-    })
-    user_id: string;
+    @ManyToOne(() => User, (user) => user.created_topics)
+    @JoinColumn({ name: 'user_id' })
+    user:User;
 
     @Column({
         type: 'int',

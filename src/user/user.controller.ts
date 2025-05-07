@@ -60,12 +60,6 @@ export class UserController {
     //     return await this.userService.create(createUserDto);
     // }
 
-    @Get('all')
-    @Public()
-    findAll() {
-        return 'This action returns all users';
-    }
-
     @Get('getVerifyCode')
     @Public()
     async getVerifyCode(@Query('email') email: string, @Res() res: Response) {

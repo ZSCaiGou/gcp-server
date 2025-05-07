@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { User } from './user.entity';
 
 /**
  * 客服工单
@@ -25,6 +26,11 @@ export class SupportTicket {
         length: 36,
     })
     user_id: string;
+
+    @ManyToOne(() => User, (user) => user.support_tickets)
+    @JoinColumn({ name: 'user_id' })
+    user:User
+
     @Column({
         type: 'text',
         comment: '用户问题',

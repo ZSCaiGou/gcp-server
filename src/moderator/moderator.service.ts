@@ -137,7 +137,7 @@ export class ModeratorService {
             await this.manager.save(content);
             return Result.success(MessageConstant.SUCCESS, null);
         }
-
+        
         return Result.success(MessageConstant.SUCCESS, null);
     }
 }

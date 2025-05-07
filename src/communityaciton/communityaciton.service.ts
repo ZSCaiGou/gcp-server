@@ -19,34 +19,19 @@ export class CommunityacitonService {
     constructor(private readonly dataSource: DataSource) {
         this.manager = this.dataSource.manager;
     }
-
-    create(createCommunityacitonDto: CreateCommunityacitonDto) {
-        return 'This action adds a new communityaciton';
-    }
-
-    findAll() {
-        return `This action returns all communityaciton`;
-    }
-
-    findOne(id: number) {
-        return `This action returns a #${id} communityaciton`;
-    }
-
-    update(id: number, updateCommunityacitonDto: UpdateCommunityacitonDto) {
-        return `This action updates a #${id} communityaciton`;
-    }
-
-    remove(id: number) {
-        return `This action removes a #${id} communityaciton`;
-    }
     // 获取用户点赞
-    async getUserLikes(user_id:string){
-        const likes = await this.manager.find(Interaction,{
-            where:{
-              user_id,
-              type: InteractionType.LIKE,
-            }
-        })
+    async getUserLikes(user_id: string) {
+        const likes = await this.manager.find(Interaction, {
+            where: {
+                user: {
+                    id: user_id,
+                },
+                type: InteractionType.LIKE,
+            },
+            relations: {
+                user: true,
+            },
+        });
         return Result.success(MessageConstant.SUCCESS, likes);
     }
 
@@ -55,11 +40,16 @@ export class CommunityacitonService {
         // 判断是否已经点赞
         const existInteraction = await this.manager.findOne(Interaction, {
             where: {
-                user_id,
+                user:{
+                  id:user_id
+                },
                 target_type: addLikeDto.target_type,
                 target_id: addLikeDto.target_id as unknown as bigint,
                 type: InteractionType.LIKE,
             },
+            relations:{
+              user:true
+            }
         });
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
@@ -77,45 +67,55 @@ export class CommunityacitonService {
     }
 
     // 获取用户收藏
-    async getUserCollects(user_id:string){
-        const collects = await this.manager.find(Interaction,{
-            where:{
-              user_id,
-              type: InteractionType.COLLECT,
+    async getUserCollects(user_id: string) {
+        const collects = await this.manager.find(Interaction, {
+            where: {
+                user:{
+                  id:user_id
+                },
+                type: InteractionType.COLLECT,
+            },
+            relations:{
+              user:true
             }
-        })
+        });
         return Result.success(MessageConstant.SUCCESS, collects);
     }
     //新增收藏
     async addCollect(user_id: string, addCollectDto: AddCollectDto) {
-      if(addCollectDto.target_type!== TargetType.CONTENT){
-          return Result.error(
-            MessageConstant.ILLEGAL_VALUE,
-            HttpStatus.BAD_REQUEST,
-            null,
-          );
-      }
-      // 判断是否已经收藏
-      const existInteraction = await this.manager.findOne(Interaction, {
-        where: {
-          user_id,
-          target_type: addCollectDto.target_type,
-          target_id: addCollectDto.target_id as unknown as bigint,
-          type: InteractionType.COLLECT,
-        },
-      });
-      if (existInteraction) {
-        await this.manager.delete(Interaction, existInteraction.id);
-      }
-      // 新增收藏
-      const interaction = this.manager.create(Interaction, {
-        user_id,
-        target_type: addCollectDto.target_type,
-        target_id: addCollectDto.target_id as unknown as bigint,
-        type: InteractionType.COLLECT,
-      });
-      
-      await this.manager.save(interaction);
-      return Result.success(MessageConstant.SUCCESS, null);
+        if (addCollectDto.target_type !== TargetType.CONTENT) {
+            return Result.error(
+                MessageConstant.ILLEGAL_VALUE,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        // 判断是否已经收藏
+        const existInteraction = await this.manager.findOne(Interaction, {
+            where: {
+                user:{
+                    id:user_id
+                },
+                target_type: addCollectDto.target_type,
+                target_id: addCollectDto.target_id as unknown as bigint,
+                type: InteractionType.COLLECT,
+            }, 
+            relations:{
+                user:true
+            }
+        });
+        if (existInteraction) {
+            await this.manager.delete(Interaction, existInteraction.id);
+        }
+        // 新增收藏
+        const interaction = this.manager.create(Interaction, {
+            user_id,
+            target_type: addCollectDto.target_type,
+            target_id: addCollectDto.target_id as unknown as bigint,
+            type: InteractionType.COLLECT,
+        });
+
+        await this.manager.save(interaction);
+        return Result.success(MessageConstant.SUCCESS, null);
     }
 }

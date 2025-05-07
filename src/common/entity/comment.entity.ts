@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, JoinColumn, ManyToOne } from 'typeorm';
+import { User } from './user.entity';
+import { UserContent } from './user_content.entity';
 
 export enum CommentStatus {
     NORMAL = 'normal',
@@ -50,6 +52,10 @@ export class Comment {
         comment: '目标内容ID',
     })
     target_content_id: bigint;
+    
+    @ManyToOne(() => UserContent, (content) => content.comments)
+    @JoinColumn({ name: 'target_content_id' })
+    target_content:UserContent
 
     @Column({
         type: 'timestamp',
@@ -65,7 +71,7 @@ export class Comment {
         onUpdate: 'CURRENT_TIMESTAMP',
     })
     updated_at: Date;
-
+    
     @Column({
         type: 'int',
         comment: '点赞数',
@@ -89,4 +95,7 @@ export class Comment {
         nickname: string;
         avatar_url: string;
     }
+    @ManyToOne(() => User, (user) => user.user_comments)
+    @JoinColumn({ name: 'user_id' })
+    user: User;
 }

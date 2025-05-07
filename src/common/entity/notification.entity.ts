@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { User } from './user.entity';
 
 export enum NotificationType {
     SYSTEM = 'system',
@@ -17,12 +18,9 @@ export class Notification {
     })
     id: bigint;
     
-    @Column({
-        comment: '用户id',
-        type: 'char',
-        length: 32,
-    })
-    user_id: number;
+    @ManyToOne(() => User, (user) => user.notifications)
+    @JoinColumn({ name: 'user_id' })
+    user:User
 
     @Column({
         comment: '通知类型',

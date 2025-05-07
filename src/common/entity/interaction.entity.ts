@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from './user.entity';
 
 export enum TargetType {
     TOPIC = 'topic',
@@ -35,11 +36,9 @@ export class Interaction {
     })
     id: bigint;
 
-    @Column({
-        type: 'varchar',
-        length: 36,
-    })
-    user_id: string;
+    @ManyToOne(() => User, (user) => user.user_interactions)
+    @JoinColumn({name: 'user_id'})
+    user: User;
 
     @Column({
         type: 'enum',

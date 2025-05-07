@@ -6,9 +6,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConfigKey } from './common/constants';
-import { CaslModule } from './casl/casl.module';
 import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
-import { PermissionModule } from './permission/permission.module';
+
 
 import { OssUtilService } from './utils/oss-util/oss-util.service';
 import { OssUtilModule } from './utils/oss-util/oss-util.module';
@@ -30,6 +29,7 @@ import { ModeratorModule } from './moderator/moderator.module';
 import { SmtpModule } from './utils/smtp/smtp.module';
 import { SafeModule } from './safe/safe.module';
 import { OpenAIModule } from './utils/openai/openai.module';
+import { DataAnalysisModule } from './data_analysis/data_analysis.module';
 
 @Module({
     imports: [
@@ -61,8 +61,6 @@ import { OpenAIModule } from './utils/openai/openai.module';
         ScheduleModule.forRoot(),
         UserModule,
         AuthModule,
-        CaslModule,
-        PermissionModule,
         OssUtilModule,
         GameModule,
         TopicModule,
@@ -79,7 +77,8 @@ import { OpenAIModule } from './utils/openai/openai.module';
         ModeratorModule,
         SmtpModule,
         SafeModule,
-        OpenAIModule
+        OpenAIModule,
+        DataAnalysisModule
     ],
     controllers: [AppController],
     providers: [AppService],

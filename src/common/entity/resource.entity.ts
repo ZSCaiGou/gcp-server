@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { User } from './user.entity';
+import { Game } from './game.entity';
 /**
  * ResourceStatus enum
  * @enum
@@ -36,10 +38,23 @@ export class Resource {
         generated: true,
     })
     id: bigint;
-    
+    // 关联的用户
+    @ManyToOne(() => User, (user) => user.owned_resources)
+    @JoinColumn({
+        name: 'user_id',
+    })
+    user:User
+    // 关联的游戏社区
+    @ManyToOne(() => Game, (game) => game.published_resources)
+    @JoinColumn({
+        name: 'game_id',
+    })
+    game: Game;
+
     @Column({
         type: 'varchar',
         length:36
+        
     })
     user_id: string;
 

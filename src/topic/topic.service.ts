@@ -57,13 +57,16 @@ export class TopicService {
         const existTopic = await this.mannager.findOne(Topic, {
             where:{
                 title:updateTopicDto.title
+            },
+            relations:{
+                user:true
             }
         });
         if(!existTopic){
             return Result.error(MessageConstant.TOPIC_NOT_FOUND, HttpStatus.BAD_REQUEST, null)
         }
         // 判断是否是该话题的拥有者
-        if(existTopic.user_id!== user_id){
+        if(existTopic.user.id!== user_id){
             return Result.error(MessageConstant.TOPIC_NOT_OWNER, HttpStatus.BAD_REQUEST, null)
         }
 
@@ -87,15 +90,19 @@ export class TopicService {
         const existTopic = await this.mannager.findOne(Topic, {
             where:{
                 title:topic_id
+            },
+            relations:{
+                user:true
             }
         });
         if(!existTopic){
             return Result.error(MessageConstant.TOPIC_NOT_FOUND, HttpStatus.BAD_REQUEST, null)
         }
         // 判断是否是该话题的拥有者
-        if(existTopic.user_id!== user_id){
+        if(existTopic.user.id!== user_id){
             return Result.error(MessageConstant.TOPIC_NOT_OWNER, HttpStatus.BAD_REQUEST, null)
         }
+        
         // 删除话题
         const deletedTopic = await this.mannager.delete(Topic,existTopic.id);
         return Result.success(MessageConstant.SUCCESS, deletedTopic);

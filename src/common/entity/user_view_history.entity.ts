@@ -1,4 +1,5 @@
-import { Column, Entity, Generated, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Generated, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity({
     comment: '用户浏览历史',
@@ -8,12 +9,9 @@ export class UserViewHistory {
     @Generated()
     id: number;
 
-    @Column({
-        type: 'varchar',
-        length: 36,
-        comment: '用户id',
-    })
-    user_id: string;
+    @ManyToOne(() => User, (user) => user.view_history)
+    @JoinColumn({ name: 'user_id' })
+    user: User;
 
     @Column({
         comment: '浏览内容id',
@@ -26,7 +24,6 @@ export class UserViewHistory {
         comment: '游戏id',
         default: null,
     })
-
     game_ids: string[];
     @Column({
         type: 'json',

@@ -1,6 +1,7 @@
-import { Column, Entity, ManyToMany, PrimaryColumn, JoinTable } from 'typeorm';
+import { Column, Entity, ManyToMany, PrimaryColumn, JoinTable, OneToMany } from 'typeorm';
 import { Game } from './game.entity';
 import { Topic } from './topic.entity';
+import { Comment } from './comment.entity';
 
 /**
  * 用户内容类型枚举
@@ -160,4 +161,7 @@ export class UserContent {
         default: 0,
     })
     comment_count: number;
+    
+    @OneToMany(() => Comment, (comment) => comment.target_content)
+    comments: Comment[]; // 评论列表
 }

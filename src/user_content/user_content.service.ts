@@ -50,12 +50,12 @@ export class UserContentService {
             user_id,
         });
         // 用户内容只能选择一个社区或者话题
-        if(userContent.game_ids.length > 1){
+        if (userContent.game_ids.length > 1) {
             return Result.error(
                 MessageConstant.USER_CONTENT_ALLOW_HAVE_ONE_COMMUNITY,
                 HttpStatus.BAD_REQUEST,
                 null,
-            )
+            );
         }
         const communitys = await this.manager.find(Game, {
             where: { id: In(userContent.game_ids) },
@@ -83,8 +83,13 @@ export class UserContentService {
                     where: {
                         target_type: TargetType.TOPIC,
                         target_id: id as unknown as bigint,
-                        user_id: savedUserContent.user_id,
+                        user: {
+                            id: savedUserContent.user_id,
+                        },
                         type: 'join',
+                    },
+                    relations: {
+                        user: true,
                     },
                 });
                 // 该用户第一次参与
@@ -170,7 +175,7 @@ export class UserContentService {
                 };
             }),
         );
-            
+
         return Result.success(MessageConstant.SUCCESS, data);
     }
 
@@ -193,7 +198,12 @@ export class UserContentService {
                     target_type: TargetType.CONTENT,
                     target_id: id as unknown as bigint,
                     type: InteractionType.LIKE,
-                    user_id: userId,
+                    user: {
+                        id: userId,
+                    },
+                },
+                relations: {
+                    user: true,
                 },
             });
             // 获取用户收藏状态
@@ -202,7 +212,10 @@ export class UserContentService {
                     target_type: TargetType.CONTENT,
                     target_id: id as unknown as bigint,
                     type: InteractionType.COLLECT,
-                    user_id: userId,
+                    user: { id: userId },
+                },
+                relations: {
+                    user: true,
                 },
             });
             if (like) {
@@ -217,8 +230,11 @@ export class UserContentService {
                 where: {
                     target_type: TargetType.COMMENT,
                     type: InteractionType.LIKE,
-                    user_id: userId,
+                    user: {id:userId}
                 },
+                relations:{
+                    user: true,
+                }
             });
             interActionStatus.likedComments.push(
                 ...likedComments.map((comment) => comment.target_id),

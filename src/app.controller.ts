@@ -2,7 +2,6 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { EntityManager, DataSource } from 'typeorm';
 import { Role } from './common/entity/role.entity';
-import { Permission } from './common/entity/permission.entity';
 import { AbilityAction, AbilityResource } from './common/constants';
 import { OssUtilService } from './utils/oss-util/oss-util.service';
 import { Public } from './common/decorator/public.decorator';

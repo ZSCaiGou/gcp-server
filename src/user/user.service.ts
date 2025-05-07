@@ -929,7 +929,7 @@ export class UserService {
         // 添加游戏版主
         user.managed_communities.push(game);
         const savedUser = await this.manager.save(user);
-        // 添加版主数量
+
 
         // 格式化返回数据
         return Result.success(MessageConstant.SUCCESS, {

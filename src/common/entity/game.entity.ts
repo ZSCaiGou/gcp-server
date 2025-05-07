@@ -1,4 +1,8 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryColumn } from 'typeorm';
+import { CommunityLog } from './community_log.entity';
+import { Resource } from './resource.entity';
+import { ModeratorRequest } from './moderator_request.entity';
+import { Category } from './category.entity';
 
 export enum GameStatus {
     ACTIVE = 'active',
@@ -16,7 +20,7 @@ export class Game {
         generated: true,
     })
     id: bigint;
-    @PrimaryColumn({
+    @Column({
         comment: '游戏名称',
         type: 'varchar',
         length: 255,
@@ -57,37 +61,51 @@ export class Game {
     game_img_url: string;
 
     @Column({
-        comment:"创建时间",
-        type:"timestamp",
-        default:()=>"CURRENT_TIMESTAMP"
+        comment: '创建时间',
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
     })
-    created_at:Date;
+    created_at: Date;
     @Column({
-        comment:"更新时间",
-        type:"timestamp",
-        default:()=>"CURRENT_TIMESTAMP",
-        onUpdate:"CURRENT_TIMESTAMP"
+        comment: '更新时间',
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
     })
-    last_updated_at:Date;
+    last_updated_at: Date;
     @Column({
-        comment:"成员数量",
-        type:"int",
-        default:0
+        comment: '成员数量',
+        type: 'int',
+        default: 0,
     })
-    member_count:number;
+    member_count: number;
     @Column({
-        comment:"版主数量",
-        type:"int",
-        default:0
+        comment: '版主数量',
+        type: 'int',
+        default: 0,
     })
-    moderator_count:number;
+    moderator_count: number;
     @Column({
-        comment:"状态",
-        type:"enum",
-        enum:GameStatus,
-        default:GameStatus.ACTIVE
+        comment: '状态',
+        type: 'enum',
+        enum: GameStatus,
+        default: GameStatus.ACTIVE,
     })
     status: GameStatus;
 
-    logs
+    @OneToMany(() => CommunityLog, (log) => log.community,{
+        eager: true,
+    })
+    logs: CommunityLog[];
+    // 发布的资源
+    @OneToMany(() => Resource, (resource) => resource.game)
+    published_resources: Resource[];
+
+    // 版主申请
+    @OneToMany(() => ModeratorRequest, (request) => request.target_community)
+    moderator_requests: ModeratorRequest[];
+
+    @ManyToMany(()=>Category)
+    @JoinTable()
+    categories: Category[];
 }

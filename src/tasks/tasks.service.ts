@@ -49,6 +49,7 @@ export class TasksService {
 
                 if(result.level === "none"){
                     userContent.status = ContentStatus.APPROVED;
+                    userContent.check_result = result.reason;
                     // #TODO 增加积分奖励
                 }else{
                     userContent.check_result = result.reason;

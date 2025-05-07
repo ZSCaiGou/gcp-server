@@ -95,7 +95,7 @@ export class AuthService {
         const code = Math.floor(Math.random() * 1000000).toString();
         await this.redisClient.setex(email, 300, code);
         // 发送验证码
-        // this.smtpService.sendEmail(email, '验证码', `您正在登录/注册，验证码为：${code}，5分钟内有效。`);
+        this.smtpService.sendEmail(email, '验证码', `您正在登录/注册，验证码为：${code}，5分钟内有效。`);
         this.logger.log(`验证码：${code}`);
 
         return Result.success(MessageConstant.SUCCESS, null);

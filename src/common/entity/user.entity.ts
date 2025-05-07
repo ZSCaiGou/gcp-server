@@ -10,12 +10,18 @@ import {
     PrimaryColumn,
 } from 'typeorm';
 import { Role } from './role.entity';
-import { Permission } from './permission.entity';
 import { UserProfile } from './user_profile.entity';
 import { UserLevel } from './user_level.entity';
 import { Game } from './game.entity';
 import { ModeratorRequest } from './moderator_request.entity';
 import { UserLog } from './user_log.entity';
+import { Interaction } from './interaction.entity';
+import { Comment } from './comment.entity';
+import { UserViewHistory } from './user_view_history.entity';
+import { Notification } from './notification.entity';
+import { Topic } from './topic.entity';
+import { Resource } from './resource.entity';
+import { SupportTicket } from './support_ticket.entity';
 
 export enum UserStatus {
     ACTIVE = 'active',
@@ -111,13 +117,6 @@ export class User {
     @JoinTable()
     managed_communities: Game[];
 
-    // 用户权限
-    @ManyToMany(() => Permission, {
-        eager: true,
-    })
-    @JoinTable()
-    permissions: Permission[];
-
     // 用户资料
     @OneToOne(() => UserProfile, {
         eager: true,
@@ -134,12 +133,42 @@ export class User {
     @JoinColumn()
     level: UserLevel;
 
+
+    // 上传的资源
+    @OneToMany(() => Resource, (resource) => resource.user)
+    owned_resources: Resource[];
+
     // 用户版主申请
-    @OneToMany(() => ModeratorRequest, (request) => request.user, {})
+    @OneToMany(() => ModeratorRequest, (request) => request.user)
     moderator_requests: ModeratorRequest[];
 
+    // 用户互动记录
+    @OneToMany(() => Interaction, (it) => it.user)
+    user_interactions: Interaction[];
+
+    // 用户评论
+    @OneToMany(() => Comment, (comment) => comment.user)
+    user_comments: Comment[];
+
+    // 用户浏览历史
+    @OneToMany(() => UserViewHistory, (history) => history.user)
+    view_history: UserViewHistory[];
+
+    // 用户通知
+    @OneToMany(() => Notification, (notification) => notification.user)
+    notifications: Notification[];
+
+    // 用户话题
+    @OneToMany(() => Topic, (topic) => topic.user)
+    created_topics: Topic[];
+
+    // 用户工单
+    @OneToMany(() => SupportTicket, (ticket) => ticket.user)
+    support_tickets: SupportTicket[];
+
+    // 用户日志
     @OneToMany(() => UserLog, (log) => log.user, {
         eager: true,
     })
-    logs: UserLog[]
+    logs: UserLog[];
 }

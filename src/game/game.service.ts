@@ -735,9 +735,12 @@ export class GameService {
                 order,
                 skip,
                 take,
+                relations: {
+                    user: true,
+                },
             },
         );
-        const followUserIds = interactions.map((i) => i.user_id);
+        const followUserIds = interactions.map((i) => i.user.id);
 
         if (sortField === 'username') {
             order['username'] = sortOrder === 'asc' ? 'ASC' : 'DESC';
@@ -753,7 +756,7 @@ export class GameService {
         const data = followUsers.map((user) => {
             const { id } = user;
             const joinTime = interactions.find(
-                (i) => i.user_id === id,
+                (i) => i.user.id === id,
             )?.created_at;
             return {
                 id: user.id,
@@ -947,7 +950,7 @@ export class GameService {
                 MessageConstant.COMMUNITY_NOT_FOUND,
                 HttpStatus.NOT_FOUND,
                 null,
-            )
+            );
         }
         // 判断用户以及管理了该社区
         const user = moderatorRequest.user;
