@@ -36,6 +36,8 @@ export class Interaction {
     })
     id: bigint;
 
+
+
     @ManyToOne(() => User, (user) => user.user_interactions)
     @JoinColumn({name: 'user_id'})
     user: User;
@@ -50,8 +52,18 @@ export class Interaction {
     @Column({
         type: 'bigint',
         comment: '目标id',
+        nullable: true,
     })
     target_id: bigint;
+
+    @Column({
+        type:"varchar",
+        length: 36,
+        comment: '目标用户id',
+        nullable: true,
+        default: null,
+    })
+    target_user_id: string;
 
     @Column({
         type: 'enum',

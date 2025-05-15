@@ -13,6 +13,9 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import bycypt from 'bcrypt';
+
+
+
 @Injectable()
 export class SafeService {
     private manager: EntityManager;
@@ -49,7 +52,7 @@ export class SafeService {
             const code = Math.floor(Math.random() * 1000000).toString();
             await this.redisClient.setex(user.email, 60 * 5, code);
             // 发送邮件验证码
-            // await this.smtpService.sendEmail(user.email, '验证码', code);
+            await this.smtpService.sendEmail(user.email, '验证码', code);
             console.log(`验证码：${code}`);
         } else {
             if (user.phone !== account) {
@@ -223,4 +226,7 @@ export class SafeService {
         return Result.success(MessageConstant.SUCCESS, null);
     }
     
+
+
+
 }

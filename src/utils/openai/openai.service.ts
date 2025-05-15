@@ -1,6 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+
+export interface AIResult {
+    result:string,
+    level:string,
+    reason:string
+    type:string[]
+}
 @Injectable()
 export class OpenAIService {
     private readonly logger = new Logger(OpenAIService.name);
@@ -40,15 +47,12 @@ export class OpenAIService {
         // 将<think></think>标签以及其内容替换为空格
         const reg = /<think>[\s\S]*?<\/think>/g;
         result = result.replace(reg, '');
-        // // 获取``` ``` 包裹的内容
-        // const regarr = result.match(/```[\s\S]*?```/g);
-        // result = regarr? regarr[0] : result;
         // // 将`符号替换为空格
         result = result.replace(/`/g, '');
         // // 将json这个关键字替换为空格
         result = result.replace(/json/g, '');
         // 将json内容转换为对象
-        const resultObj = JSON.parse(result);
+        const resultObj = JSON.parse(result) as AIResult;
 
         return resultObj;
     }
