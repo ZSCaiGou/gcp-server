@@ -3,18 +3,20 @@ import { CommunityacitonController } from './communityaciton.controller';
 import { CommunityacitonService } from './communityaciton.service';
 
 describe('CommunityacitonController', () => {
-  let controller: CommunityacitonController;
+    let controller: CommunityacitonController;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [CommunityacitonController],
-      providers: [CommunityacitonService],
-    }).compile();
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            controllers: [CommunityacitonController],
+            providers: [CommunityacitonService],
+        }).compile();
 
-    controller = module.get<CommunityacitonController>(CommunityacitonController);
-  });
+        controller = module.get<CommunityacitonController>(
+            CommunityacitonController,
+        );
+    });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
+    it('should be defined', () => {
+        expect(controller).toBeDefined();
+    });
 });

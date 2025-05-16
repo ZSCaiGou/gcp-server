@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    PrimaryColumn,
+    ManyToOne,
+    JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 export enum TargetType {
@@ -6,6 +13,7 @@ export enum TargetType {
     COMMENT = 'comment',
     CONTENT = 'content',
     GAME = 'game',
+    USER = 'user',
 }
 /**
  *  互动类型
@@ -23,7 +31,7 @@ export enum InteractionType {
     SHARE = 'share',
     COLLECT = 'collect',
     FOLLOW = 'follow',
-    JOIN='join',
+    JOIN = 'join',
 }
 
 @Entity({
@@ -36,16 +44,15 @@ export class Interaction {
     })
     id: bigint;
 
-
-
     @ManyToOne(() => User, (user) => user.user_interactions)
-    @JoinColumn({name: 'user_id'})
+    @JoinColumn({ name: 'user_id' })
     user: User;
 
     @Column({
         type: 'enum',
         enum: TargetType,
         comment: '目标类型',
+        default: null,
     })
     target_type: TargetType;
 
@@ -57,7 +64,7 @@ export class Interaction {
     target_id: bigint;
 
     @Column({
-        type:"varchar",
+        type: 'varchar',
         length: 36,
         comment: '目标用户id',
         nullable: true,

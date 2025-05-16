@@ -3,7 +3,7 @@ import { CommunityacitonService } from './communityaciton.service';
 import { CommunityacitonController } from './communityaciton.controller';
 
 @Module({
-  controllers: [CommunityacitonController],
-  providers: [CommunityacitonService],
+    controllers: [CommunityacitonController],
+    providers: [CommunityacitonService],
 })
 export class CommunityacitonModule {}

@@ -40,16 +40,16 @@ export class CommunityacitonService {
         // 判断是否已经点赞
         const existInteraction = await this.manager.findOne(Interaction, {
             where: {
-                user:{
-                  id:user_id
+                user: {
+                    id: user_id,
                 },
                 target_type: addLikeDto.target_type,
                 target_id: addLikeDto.target_id as unknown as bigint,
                 type: InteractionType.LIKE,
             },
-            relations:{
-              user:true
-            }
+            relations: {
+                user: true,
+            },
         });
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
@@ -70,14 +70,14 @@ export class CommunityacitonService {
     async getUserCollects(user_id: string) {
         const collects = await this.manager.find(Interaction, {
             where: {
-                user:{
-                  id:user_id
+                user: {
+                    id: user_id,
                 },
                 type: InteractionType.COLLECT,
             },
-            relations:{
-              user:true
-            }
+            relations: {
+                user: true,
+            },
         });
         return Result.success(MessageConstant.SUCCESS, collects);
     }
@@ -93,16 +93,16 @@ export class CommunityacitonService {
         // 判断是否已经收藏
         const existInteraction = await this.manager.findOne(Interaction, {
             where: {
-                user:{
-                    id:user_id
+                user: {
+                    id: user_id,
                 },
                 target_type: addCollectDto.target_type,
                 target_id: addCollectDto.target_id as unknown as bigint,
                 type: InteractionType.COLLECT,
-            }, 
-            relations:{
-                user:true
-            }
+            },
+            relations: {
+                user: true,
+            },
         });
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
@@ -115,6 +115,67 @@ export class CommunityacitonService {
             type: InteractionType.COLLECT,
         });
 
+        await this.manager.save(interaction);
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+    // 关注和取消关注用户
+    async toggleFocusUser(user_id: string, target_id: string) {
+        // 判断是否已经关注
+        const existInteraction = await this.manager.findOne(Interaction, {
+            where: {
+                user: {
+                    id: user_id,
+                },
+                target_type: TargetType.USER,
+                target_user_id: target_id,
+                type: InteractionType.FOLLOW,
+            },
+            relations: {
+                user: true,
+            },
+        });
+        if (existInteraction) {
+            await this.manager.delete(Interaction, existInteraction.id);
+            return Result.success(MessageConstant.SUCCESS, null);
+        }
+        // 新增关注
+        const interaction = this.manager.create(Interaction, {
+            user_id,
+            target_type: TargetType.USER,
+            target_user_id: target_id,
+            type: InteractionType.FOLLOW,
+        });
+        await this.manager.save(interaction);
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+
+    // 收藏内容
+    async addContentCollect(user_id: string, content_id: string) {
+        // 判断是否已经收藏
+        const existInteraction = await this.manager.findOne(Interaction, {
+            where: {
+                user: {
+                    id: user_id,
+                },
+                target_type: TargetType.CONTENT,
+                target_id: content_id as unknown as bigint,
+                type: InteractionType.COLLECT,
+            },
+            relations: {
+                user: true,
+            },
+        });
+        if (existInteraction) {
+            await this.manager.delete(Interaction, existInteraction.id);
+            return Result.success(MessageConstant.SUCCESS, null);
+        }
+        // 新增收藏
+        const interaction = this.manager.create(Interaction, {
+            user_id,
+            target_type: TargetType.CONTENT,
+            target_id: content_id as unknown as bigint,
+            type: InteractionType.COLLECT,
+        });
         await this.manager.save(interaction);
         return Result.success(MessageConstant.SUCCESS, null);
     }

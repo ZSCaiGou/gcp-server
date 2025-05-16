@@ -4,12 +4,10 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { LoginType, LoginUserDto } from 'src/user/dto/login-user.dto';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { access } from 'fs';
 import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
 import Redis from 'ioredis';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-
 @Injectable()
 export class AuthService {
     private readonly logger = new Logger(AuthService.name);
@@ -95,7 +93,11 @@ export class AuthService {
         const code = Math.floor(Math.random() * 1000000).toString();
         await this.redisClient.setex(email, 300, code);
         // 发送验证码
-        this.smtpService.sendEmail(email, '验证码', `您正在登录/注册，验证码为：${code}，5分钟内有效。`);
+        this.smtpService.sendEmail(
+            email,
+            '验证码',
+            `您正在登录/注册，验证码为：${code}，5分钟内有效。`,
+        );
         this.logger.log(`验证码：${code}`);
 
         return Result.success(MessageConstant.SUCCESS, null);

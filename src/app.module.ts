@@ -8,7 +8,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConfigKey } from './common/constants';
 import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
 
-
 import { OssUtilService } from './utils/oss-util/oss-util.service';
 import { OssUtilModule } from './utils/oss-util/oss-util.module';
 import { GameModule } from './game/game.module';
@@ -78,7 +77,7 @@ import { DataAnalysisModule } from './data_analysis/data_analysis.module';
         SmtpModule,
         SafeModule,
         OpenAIModule,
-        DataAnalysisModule
+        DataAnalysisModule,
     ],
     controllers: [AppController],
     providers: [AppService],
