@@ -185,11 +185,32 @@ export class UserContentService {
             isLike: boolean;
             isCollect: boolean;
             likedComments: bigint[];
+            isFocused: boolean;
         } = {
             isLike: false,
             isCollect: false,
             likedComments: [],
+            isFocused: false,
         };
+        // 获取用户内容
+        const userContent = await this.manager.findOne(UserContent, {
+            where: {
+                id: id as unknown as bigint,
+            },
+        });
+        if (!userContent) {
+            return Result.error(
+                MessageConstant.USER_CONTENT_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                null,
+            );
+        }
+        // 获取创建者信息
+        const createUser = await this.manager.findOne(User, {
+            where: {
+                id: userContent.user_id,
+            },
+        });
         // 如果用户id不为空，则是登录用户
         if (userId) {
             // 获取用户点赞和收藏状态
@@ -230,36 +251,29 @@ export class UserContentService {
                 where: {
                     target_type: TargetType.COMMENT,
                     type: InteractionType.LIKE,
-                    user: {id:userId}
+                    user: { id: userId },
                 },
-                relations:{
+                relations: {
                     user: true,
-                }
+                },
             });
             interActionStatus.likedComments.push(
                 ...likedComments.map((comment) => comment.target_id),
             );
+            // 获取用户是否关注了作者
+            const focus = await this.manager.count(Interaction,{
+                where:{
+                    target_type:TargetType.USER,
+                    type:InteractionType.FOLLOW,
+                    user:{
+                        id:userId
+                    },
+                    target_user_id:createUser?.id
+                }
+            })
+            interActionStatus.isFocused = focus > 0;
         }
 
-        // 获取用户内容
-        const userContent = await this.manager.findOne(UserContent, {
-            where: {
-                id: id as unknown as bigint,
-            },
-        });
-        if (!userContent) {
-            return Result.error(
-                MessageConstant.USER_CONTENT_NOT_FOUND,
-                HttpStatus.NOT_FOUND,
-                null,
-            );
-        }
-        // 获取创建者信息
-        const createUser = await this.manager.findOne(User, {
-            where: {
-                id: userContent.user_id,
-            },
-        });
         // 获取游戏标签
         const gameTags: Game[] = await this.manager.findBy(Game, {
             id: In(userContent.game_ids),
@@ -269,7 +283,7 @@ export class UserContentService {
             id: In(userContent.topic_ids),
         });
 
-        // 默认获取最新的20条获取评论
+        // 默认获取最新的500条获取评论
         const comments = await this.manager.find(Comment, {
             where: {
                 parent_id: -1 as unknown as bigint,
@@ -279,7 +293,7 @@ export class UserContentService {
             order: {
                 created_at: 'desc',
             },
-            take: 20,
+            take: 500,
         });
 
         // 增加热度
@@ -306,6 +320,8 @@ export class UserContentService {
             content: userContent.content,
             type: userContent.type,
             like_count: userContent.like_count,
+            isLiked: interActionStatus.isLike,
+            isFavorited: interActionStatus.isCollect,
             collect_count: userContent.collect_count,
             comment_count: userContent.comment_count,
             user_info: {
@@ -315,6 +331,7 @@ export class UserContentService {
                     : createUser?.username,
                 avatar_url: createUser?.profile.avatar_url,
                 level: createUser?.level.level,
+                is_focused: interActionStatus.isFocused,
             },
             game_tags: gameTags.map((game) => ({
                 id: game.id,

@@ -4,7 +4,7 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class SmtpService {
-    private transporter;
+    private transporter ;
 
     constructor(private configService: ConfigService) {
         const smtpHost = this.configService.get<string>('SMTP_HOST');
@@ -23,7 +23,7 @@ export class SmtpService {
             });
         }
     }
-
+    // 发送邮件
     async sendEmail(to: string, subject: string, text: string) {
         if (!this.transporter) {
             throw new Error('smtp transporter not init');
