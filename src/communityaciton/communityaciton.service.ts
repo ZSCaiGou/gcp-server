@@ -13,6 +13,7 @@ import { Result } from 'src/common/result/Result';
 import { AddCollectDto } from './dto/add-collect.dto';
 import { User } from 'src/common/entity/user.entity';
 import { UserContent } from 'src/common/entity/user_content.entity';
+import { Comment } from 'src/common/entity/comment.entity';
 
 @Injectable()
 export class CommunityacitonService {
@@ -65,14 +66,25 @@ export class CommunityacitonService {
         });
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
-            await this.manager.increment(
-                UserContent,
-                {
-                    id: addLikeDto.target_id as unknown as bigint,
-                },
-                'like_count',
-                -1,
-            );
+            if(addLikeDto.target_type === TargetType.CONTENT){
+                await this.manager.increment(
+                    UserContent,
+                    {
+                        id: addLikeDto.target_id as unknown as bigint,
+                    },
+                    'like_count',
+                    -1,
+                );
+            }else{
+                await this.manager.increment(
+                    Comment,
+                    {
+                        id: addLikeDto.target_id as unknown as bigint,
+                    },
+                    'like_count',
+                    -1,
+                );
+            }
             return Result.success(MessageConstant.SUCCESS, null);
         }
         // 新增点赞
@@ -84,14 +96,24 @@ export class CommunityacitonService {
         });
         interaction.user = user;
         await this.manager.save(interaction);
-        await this.manager.increment(
-            UserContent,
-            {
-                id: addLikeDto.target_id as unknown as bigint,
-            },
-            'like_count',
-            1,
-        );
+        if(addLikeDto.target_type === TargetType.CONTENT){
+            await this.manager.increment(
+                UserContent,
+                {
+                    id: addLikeDto.target_id as unknown as bigint,
+                },
+                'like_count',
+                1,
+            );
+        }else{
+            await this.manager.increment(
+                Comment,{
+                    id: addLikeDto.target_id as unknown as bigint,
+                },
+                'like_count',
+                1,
+            );
+        }
         return Result.success(MessageConstant.SUCCESS, null);
     }
 

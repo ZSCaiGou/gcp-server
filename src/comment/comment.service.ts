@@ -79,6 +79,18 @@ export class CommentService {
             },
             take: 10,
         });
-        return Result.success(MessageConstant.SUCCESS, commentsReplies);
+        return Result.success(
+            MessageConstant.SUCCESS,
+            commentsReplies.map((comment) => {
+                return {
+                    id: comment.id,
+                    content: comment.content,
+                    user_info: comment.user_info,
+                    created_at: comment.created_at,
+                    likeCount: comment.like_count,
+                    replyCount: comment.reply_count,
+                };
+            }),
+        );
     }
 }
