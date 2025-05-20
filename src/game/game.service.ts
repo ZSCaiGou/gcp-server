@@ -1,3 +1,4 @@
+import { MessageService } from 'src/message/message.service';
 import { PaginationFollowUserDto } from './dto/pagination-follow-user.dto';
 import { OssUtilService } from './../utils/oss-util/oss-util.service';
 import { PaginationCommunityDto } from './dto/pagination-community.dto';
@@ -39,6 +40,8 @@ import {
     ModeratorRequest,
     ModeratorRequestStatus,
 } from 'src/common/entity/moderator_request.entity';
+import { NotificationType } from 'src/common/entity/notification.entity';
+import { Role } from 'src/common/entity/role.entity';
 
 @Injectable()
 export class GameService {
@@ -47,6 +50,7 @@ export class GameService {
         private readonly dataSource: DataSource,
         private readonly userContentService: UserContentService,
         private readonly ossUtilService: OssUtilService,
+        private readonly messageService: MessageService,
     ) {
         this.manager = this.dataSource.manager;
     }
@@ -387,6 +391,26 @@ export class GameService {
 
         return Result.success(MessageConstant.SUCCESS, contentList);
     }
+    // 获取游戏社区
+    async getGameCommunitybySearch(search: string) {
+        const communities = await this.manager.find(Game, {
+            where: {
+                title: Like(`%${search}%`),
+            },
+            order: {
+                id: 'DESC',
+            },
+        });
+        const data = communities.map((community) => {
+            return {
+                id: community.id,
+                title: community.title,
+                game_img_url: community.game_img_url,
+            };
+        });
+        return Result.success(MessageConstant.SUCCESS, data);
+    }
+
     // 管理获取社区
     async getAdminCommunities() {
         const communities = await this.manager.find(Game, {
@@ -923,12 +947,12 @@ export class GameService {
             );
         }
         // 判断是否存在
-        const moderatorRequest = await this.manager.findOneBy(
-            ModeratorRequest,
-            {
+        const moderatorRequest = await this.manager.findOne(ModeratorRequest, {
+            where: {
                 id: moderatorRequestId,
             },
-        );
+            relations: ['user'],
+        });
         if (!moderatorRequest) {
             return Result.error(
                 MessageConstant.MODERATOR_REQUEST_NOT_FOUND,
@@ -968,7 +992,17 @@ export class GameService {
         if (status === ModeratorRequestStatus.APPROVED) {
             // 添加到社区管理列表中
             user.managed_communities.push(community);
+            const MODER = (await this.manager.findOneBy(Role, {
+                role_name: 'MODERATOR',
+            })) as Role;
+            user.roles = [MODER];
             await this.manager.save(user);
+            // 发送通知
+            await this.messageService.createMessage(
+                NotificationType.SYSTEM,
+                '管理员同意了你的申请成为社区版主',
+                user,
+            );
         }
         moderatorRequest.status = status;
         await this.manager.save(moderatorRequest);

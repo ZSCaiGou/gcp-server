@@ -22,6 +22,7 @@ import { Notification } from './notification.entity';
 import { Topic } from './topic.entity';
 import { Resource } from './resource.entity';
 import { SupportTicket } from './support_ticket.entity';
+import { UserContent } from './user_content.entity';
 
 export enum UserStatus {
     ACTIVE = 'active',
@@ -133,6 +134,9 @@ export class User {
     @JoinColumn()
     level: UserLevel;
 
+    // 发布的内容
+    @OneToMany(() => UserContent, (content) => content.user)
+    created_contents: UserContent[];
 
     // 上传的资源
     @OneToMany(() => Resource, (resource) => resource.user)
@@ -167,8 +171,6 @@ export class User {
     support_tickets: SupportTicket[];
 
     // 用户日志
-    @OneToMany(() => UserLog, (log) => log.user, {
-        eager: true,
-    })
+    @OneToMany(() => UserLog, (log) => log.user)
     logs: UserLog[];
 }

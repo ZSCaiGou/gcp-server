@@ -1,13 +1,23 @@
-import { Column, Entity, Generated, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import {
+    Column,
+    Entity,
+    Generated,
+    JoinColumn,
+    ManyToOne,
+    PrimaryColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity({
     comment: '用户浏览历史',
 })
 export class UserViewHistory {
-    @PrimaryColumn()
-    @Generated()
-    id: number;
+    @PrimaryColumn({
+        comment: '浏览历史id',
+        type: 'bigint',
+        generated: true,
+    })
+    id: bigint;
 
     @ManyToOne(() => User, (user) => user.view_history)
     @JoinColumn({ name: 'user_id' })

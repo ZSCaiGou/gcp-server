@@ -1,3 +1,4 @@
+import { MessageService } from './../message/message.service';
 import { OpenAIService } from './../utils/openai/openai.service';
 import {
     TextModerationResponse,
@@ -8,12 +9,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression, Interval, Timeout } from '@nestjs/schedule';
 import Redis from 'ioredis';
 import { TimeInterval } from 'rxjs/internal/operators/timeInterval';
+import { Comment, CommentStatus } from 'src/common/entity/comment.entity';
 import { Game } from 'src/common/entity/game.entity';
 import {
     Interaction,
     InteractionType,
     TargetType,
 } from 'src/common/entity/interaction.entity';
+import { NotificationType } from 'src/common/entity/notification.entity';
 import { User, UserStatus } from 'src/common/entity/user.entity';
 import {
     ContentStatus,
@@ -49,6 +52,7 @@ export class TasksService {
         private readonly dataSouce: DataSource,
         private readonly openAIService: OpenAIService,
         @InjectRedis() private readonly redisClient: Redis,
+        private readonly messageService: MessageService,
     ) {
         this.manager = this.dataSouce.manager;
     }
@@ -64,6 +68,7 @@ export class TasksService {
                 create_time: 'ASC',
             },
             take: 80,
+            relations: ['user'],
         });
         if (userContentList.length === 0) {
             this.logger.log('没有待检测内容');
@@ -80,12 +85,19 @@ export class TasksService {
                 if (result.level === 'none') {
                     userContent.status = ContentStatus.APPROVED;
                     userContent.check_result = result.reason;
+
                     // #TODO 增加积分奖励
                 } else {
                     userContent.check_result = result.reason;
                     userContent.status = ContentStatus.REJECTED;
                 }
                 await this.manager.save(userContent);
+                const mesContent = `您发布的内容 ${userContent.title} 审核结果为：${result.reason}`;
+                await this.messageService.createMessage(
+                    NotificationType.SYSTEM,
+                    mesContent,
+                    userContent.user,
+                );
             } else {
                 this.logger.log('没有待检测内容');
             }
@@ -115,7 +127,113 @@ export class TasksService {
 
     // 定时任务每两小时执行一次，从数据库中获取推荐系统的基础数据
     @Cron(CronExpression.EVERY_2_HOURS)
+    // @Interval(5000)
     async handleGetRecommendBaseData() {
         this.logger.log('开始获取推荐系统的基础数据');
+        this.logger.log('获取用户行为数据');
+        const userBehaviors: UserBehavior[] = [];
+        const allInteractions = await this.manager.find(Interaction, {
+            relations: ['user'],
+            where: {
+                target_type: TargetType.CONTENT,
+            },
+        });
+        // 点赞和收藏的行为
+        userBehaviors.push(
+            ...allInteractions.map((it) => {
+                return {
+                    user_id: it.user.id,
+                    item_id: it.target_id,
+                    behavior_type: it.type as BehaviorType,
+                    weight: it.type === InteractionType.LIKE ? 3 : 5, // 社区互动的结果只有点赞和收藏，权重为3和5
+                    timeStamp: it.created_at,
+                    social_links: [],
+                };
+            }),
+        );
+        // 评论的行为
+        const comments = await this.manager.find(Comment, {
+            where: {
+                status: CommentStatus.NORMAL,
+                parent_id: -1 as unknown as bigint,
+            },
+            relations: ['user', 'target_content'],
+        });
+        userBehaviors.push(
+            ...comments.map((comment) => {
+                return {
+                    user_id: comment.user.id,
+                    item_id: comment.target_content.id,
+                    behavior_type: 'comment' as BehaviorType,
+                    weight: 2, // 评论的权重为2
+                    timeStamp: comment.created_at,
+                    social_links: [],
+                };
+            }),
+        );
+        // 浏览的行为
+        const userHistoryList = await this.manager.find(UserViewHistory);
+        userBehaviors.push(
+            ...userHistoryList.map((history) => {
+                return {
+                    user_id: history.user.id,
+                    item_id: history.user_content_id,
+                    behavior_type: 'view' as BehaviorType,
+                    weight: 1, // 浏览的权重为1
+                    timeStamp: history.view_time,
+                    social_links: [],
+                };
+            }),
+        );
+        this.logger.log('获取用户行为数据完成');
+        this.logger.log('获取内容特征数据');
+        const contentFeatures: ContentFearure[] = [];
+
+        const allUserContents = await this.manager.find(UserContent, {
+            where: {
+                status: ContentStatus.APPROVED,
+            },
+            relations: {
+                user: true,
+                target_communities: {
+                    categories: true,
+                },
+                target_topics: true,
+            },
+        });
+        contentFeatures.push(
+            ...(await Promise.all(
+                allUserContents.map((content) => {
+                    const tags: string[] = [];
+                    const community = content.target_communities[0];
+
+                    return {
+                        item_id: content.id,
+                        tags: community.category,
+                        popularity:
+                            content.like_count +
+                            content.comment_count +
+                            content.comment_count,
+                        creator_id: content.user.id,
+                    };
+                }),
+            )),
+        );
+        this.logger.log('获取内容特征数据完成');
+        // 将数据存放在redis中
+        this.logger.log('将数据存放在redis中');
+        await this.redisClient.set(
+            'userBehaviors',
+            JSON.stringify(userBehaviors),
+        );
+        await this.redisClient.set(
+            'contentFeatures',
+            JSON.stringify(contentFeatures),
+        );
+        this.logger.log('将数据存放在redis中完成');
+        return {
+            userBehaviors,
+            contentFeatures,
+        };
     }
 }

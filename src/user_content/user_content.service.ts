@@ -1,3 +1,4 @@
+import { RecomandService } from './../utils/recommand/recomand.service';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserContentDto } from './dto/create-user_content.dto';
 import { UpdateUserContentDto } from './dto/update-user_content.dto';
@@ -19,6 +20,8 @@ import {
 } from 'src/common/entity/interaction.entity';
 import { User } from 'src/common/entity/user.entity';
 import { Comment, CommentStatus } from 'src/common/entity/comment.entity';
+import { ContentFearure } from 'src/tasks/tasks.service';
+import { UserViewHistory } from 'src/common/entity/user_view_history.entity';
 
 @Injectable()
 export class UserContentService {
@@ -26,6 +29,7 @@ export class UserContentService {
     constructor(
         private ossUtilService: OssUtilService,
         private dataSource: DataSource,
+        private recomandService: RecomandService,
     ) {
         this.manager = this.dataSource.manager;
     }
@@ -47,8 +51,18 @@ export class UserContentService {
     ) {
         const userContent = this.manager.create(UserContent, {
             ...createUserContentDto,
-            user_id,
         });
+        const user = await this.manager.findOneBy(User, {
+            id: user_id,
+        });
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.NOT_FOUND,
+                null,
+            );
+        }
+        userContent.user = user;
         // 用户内容只能选择一个社区或者话题
         if (userContent.game_ids.length > 1) {
             return Result.error(
@@ -84,7 +98,7 @@ export class UserContentService {
                         target_type: TargetType.TOPIC,
                         target_id: id as unknown as bigint,
                         user: {
-                            id: savedUserContent.user_id,
+                            id: savedUserContent.user.id,
                         },
                         type: 'join',
                     },
@@ -95,7 +109,7 @@ export class UserContentService {
                 // 该用户第一次参与
                 if (count === 0) {
                     const interAction = this.manager.create(Interaction, {
-                        user_id: savedUserContent.user_id,
+                        user_id: savedUserContent.user.id,
                         target_type: TargetType.TOPIC,
                         target_id: id as unknown as bigint,
                         type: 'join',
@@ -118,24 +132,49 @@ export class UserContentService {
         return Result.success(MessageConstant.SUCCESS, { url: ossUrl });
     }
     // 获取主页内容
-    async getMainUserContent(count: number) {
-        // #TODO 实现推荐算法
+    async getMainUserContent(count: number, userId: string | null) {
+        const recommandContent: ContentFearure[] = [];
+        // 获取推荐内容
+        if (userId) {
+            recommandContent.push(
+                ...(await this.recomandService.getRecommendContent(userId)),
+            );
+        }
+        const userContentList: UserContent[] = [];
+        if (recommandContent.length === 0) {
+            userContentList.push(
+                ...(await this.manager.find(UserContent, {
+                    where: {
+                        status: ContentStatus.APPROVED,
+                    },
+                    order: {
+                        create_time: 'DESC',
+                    },
+                    take: count,
+                    relations: ['user'],
+                })),
+            );
+        } else {
+            userContentList.push(
+                ...(await this.manager.find(UserContent, {
+                    where: {
+                        status: ContentStatus.APPROVED,
+                        id: In(recommandContent.map((item) => item.item_id)),
+                    },
+                    order: {
+                        create_time: 'DESC',
+                    },
+                    relations: ['user'],
+                })),
+            );
+        }
 
-        const userContentList = await this.manager.find(UserContent, {
-            where: {
-                status: ContentStatus.APPROVED,
-            },
-            order: {
-                create_time: 'DESC',
-            },
-            take: count,
-        });
         // 获取返回数据
         const data = await Promise.all(
             userContentList.map(async (content) => {
                 const createUser = await this.manager.findOne(User, {
                     where: {
-                        id: content.user_id,
+                        id: content.user.id,
                     },
                 });
                 // 获取游戏标签
@@ -201,6 +240,7 @@ export class UserContentService {
             where: {
                 id: id as unknown as bigint,
             },
+            relations: ['user'],
         });
         if (!userContent) {
             return Result.error(
@@ -212,7 +252,7 @@ export class UserContentService {
         // 获取创建者信息
         const createUser = await this.manager.findOne(User, {
             where: {
-                id: userContent.user_id,
+                id: userContent.user.id,
             },
         });
         // 如果用户id不为空，则是登录用户
@@ -276,6 +316,20 @@ export class UserContentService {
                 },
             });
             interActionStatus.isFocused = focus > 0;
+            const user = (await this.manager.findOneBy(User, {
+                id: userId,
+            })) as User;
+            // 添加用户的浏览记录
+            const userView = this.manager.create(UserViewHistory, {
+                user,
+                user_content_id: userContent.id,
+                game_ids: userContent.game_ids,
+                topic_ids: userContent.topic_ids,
+            });
+            // 只有浏览者不是作者才添加浏览记录
+            if (userContent.user.id !== userId) {
+                await this.manager.save(userView);
+            }
         }
 
         // 获取游戏标签
@@ -372,8 +426,11 @@ export class UserContentService {
     }
     // 删除用户内容
     async deleteUserContent(contentId: bigint, userId: string) {
-        const content = await this.manager.findOneBy(UserContent, {
-            id: contentId,
+        const content = await this.manager.findOne(UserContent, {
+            where: {
+                id: contentId,
+            },
+            relations: ['user'],
         });
         if (!content) {
             return Result.error(
@@ -382,7 +439,7 @@ export class UserContentService {
                 null,
             );
         }
-        if (content.user_id === userId) {
+        if (content.user.id === userId) {
             content.status = ContentStatus.DELETED;
             await this.manager.save(content);
             return Result.success(MessageConstant.SUCCESS, null);

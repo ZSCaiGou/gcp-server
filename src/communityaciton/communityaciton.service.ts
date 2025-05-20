@@ -1,3 +1,4 @@
+import { MessageService } from './../message/message.service';
 import { DataSource, EntityManager } from 'typeorm';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCommunityacitonDto } from './dto/create-communityaciton.dto';
@@ -14,12 +15,19 @@ import { AddCollectDto } from './dto/add-collect.dto';
 import { User } from 'src/common/entity/user.entity';
 import { UserContent } from 'src/common/entity/user_content.entity';
 import { Comment } from 'src/common/entity/comment.entity';
+import {
+    Notification,
+    NotificationType,
+} from 'src/common/entity/notification.entity';
 
 @Injectable()
 export class CommunityacitonService {
     private readonly manager: EntityManager;
 
-    constructor(private readonly dataSource: DataSource) {
+    constructor(
+        private readonly dataSource: DataSource,
+        private readonly messageService: MessageService,
+    ) {
         this.manager = this.dataSource.manager;
     }
     // 获取用户点赞
@@ -69,6 +77,7 @@ export class CommunityacitonService {
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
             if (addLikeDto.target_type === TargetType.CONTENT) {
+                // 用户内容点赞
                 await this.manager.increment(
                     UserContent,
                     {
@@ -78,6 +87,7 @@ export class CommunityacitonService {
                     -1,
                 );
             } else {
+                // 评论点赞
                 await this.manager.increment(
                     Comment,
                     {
@@ -86,6 +96,7 @@ export class CommunityacitonService {
                     'like_count',
                     -1,
                 );
+
                 // origin_id用来判断是否是评论回复
                 const { origin_id } = (await this.manager.findOne(Comment, {
                     where: {
@@ -114,6 +125,16 @@ export class CommunityacitonService {
                 'like_count',
                 1,
             );
+            const content = await this.manager.find(UserContent, {
+                where: {
+                    id: addLikeDto.target_id as unknown as bigint,
+                },
+                relations: ['user'],
+            });
+            await this.addNotifaication(
+                content[0].user,
+                `${user.profile.nickname || user.username}点赞了你的内容:《${content[0].title}》`,
+            );
         } else {
             await this.manager.increment(
                 Comment,
@@ -122,6 +143,16 @@ export class CommunityacitonService {
                 },
                 'like_count',
                 1,
+            );
+            const comment = await this.manager.find(Comment, {
+                where: {
+                    id: addLikeDto.target_id as unknown as bigint,
+                },
+                relations: ['user', 'target_content'],
+            });
+            await this.addNotifaication(
+                comment[0].user,
+                `${user.profile.nickname || user.username}点赞了你的评论:${comment[0].content}`,
             );
             const { origin_id } = (await this.manager.findOne(Comment, {
                 where: {
@@ -210,6 +241,17 @@ export class CommunityacitonService {
             'collect_count',
             1,
         );
+        const content = await this.manager.find(UserContent, {
+            where: {
+                id: addCollectDto.target_id as unknown as bigint,
+            },
+            relations: ['user'],
+        });
+        await this.addNotifaication(
+            content[0].user,
+            `${user.profile.nickname || user.username}收藏了你的内容:《${content[0].title}》`,
+        );
+
         return Result.success(MessageConstant.SUCCESS, null);
     }
     // 关注和取消关注用户
@@ -242,6 +284,13 @@ export class CommunityacitonService {
         });
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
+
+            await this.addNotifaication(
+                (await this.manager.findOneBy(User, {
+                    id: target_id,
+                })) as User,
+                `${user.profile.nickname || user.username}取消关注了你`,
+            );
             return Result.success(MessageConstant.SUCCESS, null);
         }
         // 新增关注
@@ -252,11 +301,31 @@ export class CommunityacitonService {
         });
         interaction.user = user;
         await this.manager.save(interaction);
+        await this.addNotifaication(
+            (await this.manager.findOneBy(User, {
+                id: target_id,
+            })) as User,
+            `${user.profile.nickname || user.username}关注了你`,
+        );
+
         return Result.success(MessageConstant.SUCCESS, null);
     }
 
     // 收藏内容
     async addContentCollect(user_id: string, content_id: string) {
+        const targetContent = await this.manager.findOne(UserContent, {
+            where: {
+                id: content_id as unknown as bigint,
+            },
+            relations: ['user'],
+        });
+        if (!targetContent) {
+            return Result.error(
+                MessageConstant.USER_CONTENT_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                null,
+            );
+        }
         // 判断是否已经收藏
         const existInteraction = await this.manager.findOne(Interaction, {
             where: {
@@ -273,6 +342,10 @@ export class CommunityacitonService {
         });
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
+            await this.addNotifaication(
+                targetContent.user,
+                `${existInteraction.user.profile.nickname || existInteraction.user.username}取消收藏了你的内容:${targetContent.title}`,
+            );
             return Result.success(MessageConstant.SUCCESS, null);
         }
         // 新增收藏
@@ -283,8 +356,22 @@ export class CommunityacitonService {
             type: InteractionType.COLLECT,
         });
         await this.manager.save(interaction);
+
+        await this.addNotifaication(
+            targetContent.user,
+            `${interaction.user.profile.nickname || interaction.user.username}收藏了你的内容:${targetContent.title}`,
+        );
         return Result.success(MessageConstant.SUCCESS, null);
     }
     // 分享用户内容
     // async shareUserContent() {}
+
+    async addNotifaication(TargetUser: User, message: string) {
+        // 新增通知
+        await this.messageService.createMessage(
+            NotificationType.EVENT,
+            message,
+            TargetUser,
+        );
+    }
 }

@@ -1,7 +1,17 @@
-import { Column, Entity, ManyToMany, PrimaryColumn, JoinTable, OneToMany } from 'typeorm';
+import {
+    Column,
+    Entity,
+    ManyToMany,
+    PrimaryColumn,
+    JoinTable,
+    OneToMany,
+    ManyToOne,
+    JoinColumn,
+} from 'typeorm';
 import { Game } from './game.entity';
 import { Topic } from './topic.entity';
 import { Comment } from './comment.entity';
+import { User } from './user.entity';
 
 /**
  * 用户内容类型枚举
@@ -46,13 +56,11 @@ export class UserContent {
     })
     id: bigint;
 
-    @Column({
-        comment: '用户ID',
-        type: 'varchar',
-        length: 36,
+    @ManyToOne(() => User, (user) => user.created_contents)
+    @JoinColumn({
+        name: 'user_id',
     })
-    user_id: string;
-
+    user: User;
     @Column({
         comment: '游戏ID',
         type: 'json',
@@ -66,7 +74,7 @@ export class UserContent {
         default: null,
     })
     topic_ids: string[];
-    
+
     @ManyToMany(() => Game, {
         eager: true,
     })
@@ -161,7 +169,7 @@ export class UserContent {
         default: 0,
     })
     comment_count: number;
-    
+
     @OneToMany(() => Comment, (comment) => comment.target_content)
     comments: Comment[]; // 评论列表
 }

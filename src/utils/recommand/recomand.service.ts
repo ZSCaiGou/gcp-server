@@ -1,8 +1,15 @@
+import { TasksService } from './../../tasks/tasks.service';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable } from '@nestjs/common';
+import Redis from 'ioredis';
 import { ContentFearure, UserBehavior } from 'src/tasks/tasks.service';
 
 @Injectable()
 export class RecomandService {
+    constructor(
+        @InjectRedis() private readonly redisClient: Redis,
+        private readonly tasksService: TasksService,
+    ) {}
     // 构建用户-内容行为矩阵（User-Item Interaction Matrix）
     buildUserItemMatrix(
         behaviors: UserBehavior[],
@@ -219,5 +226,40 @@ export class RecomandService {
         const topItems = sortedItems.slice(0, topN).map(([itemId]) => itemId);
 
         return contents.filter((content) => topItems.includes(content.item_id));
+    }
+    // 获取推荐内容
+    async getRecommendContent(userId: string) {
+        const userBehaviors: UserBehavior[] = [];
+        const contentFeatures: ContentFearure[] = [];
+
+        // 从redis中获取用户行为数据
+        const userBehaviorsStr = await this.redisClient.get('userBehaviors');
+        // 从redis中获取内容特征数据
+        const contentFeaturesStr =
+            await this.redisClient.get('contentFeatures');
+        if (!userBehaviorsStr || !contentFeaturesStr) {
+            // 如果redis中没有数据，则调用接口获取数据
+            const database =
+                await this.tasksService.handleGetRecommendBaseData();
+            userBehaviors.push(...database.userBehaviors);
+            contentFeatures.push(...database.contentFeatures);
+        } else {
+            // 如果redis中有数据，则直接从redis中获取
+            userBehaviors.push(...JSON.parse(userBehaviorsStr));
+            contentFeatures.push(...JSON.parse(contentFeaturesStr));
+        }
+        // 构建用户-内容行为矩阵
+        const userBehaviorsMap = this.buildUserItemMatrix(userBehaviors);
+        // 构建内容标签特征
+        const contentTagFeatures =
+            this.buildContentTagFeatures(contentFeatures);
+        // 推荐内容
+        const recommendContent = this.hybridRecommendation(
+            userId,
+            userBehaviorsMap,
+            contentFeatures,
+            contentTagFeatures,
+        );
+        return recommendContent;
     }
 }

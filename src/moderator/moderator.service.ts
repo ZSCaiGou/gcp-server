@@ -10,6 +10,8 @@ import {
     ContentStatus,
     UserContent,
 } from 'src/common/entity/user_content.entity';
+import { Game } from 'src/common/entity/game.entity';
+import { ModeratorRequest } from 'src/common/entity/moderator_request.entity';
 
 @Injectable()
 export class ModeratorService {
@@ -74,6 +76,7 @@ export class ModeratorService {
                 type: type ? type : undefined,
                 title: search ? Like(`%${search}%`) : undefined,
             },
+            relations: ['user'],
             skip,
             take,
             order,
@@ -81,13 +84,10 @@ export class ModeratorService {
 
         const items = await Promise.all(
             contents.map(async (content) => {
-                const author = await this.manager.findOneBy(User, {
-                    id: content.user_id,
-                });
                 return {
                     id: content.id,
                     title: content.title,
-                    author: author?.username,
+                    author: content.user.username,
                     content: content.content,
                     cover_url: content.cover_url,
                     picture_urls: content.picture_urls,
@@ -106,7 +106,7 @@ export class ModeratorService {
             pageSize,
         });
     }
-
+    // 内容审核
     async reviewContent(
         moderId: string,
         contentId: bigint,
@@ -137,7 +137,42 @@ export class ModeratorService {
             await this.manager.save(content);
             return Result.success(MessageConstant.SUCCESS, null);
         }
-        
+
+        return Result.success(MessageConstant.SUCCESS, null);
+    }
+    // 申请成为版主
+    async applyModerator(userId: string, communityId: bigint) {
+        const user = await this.manager.findOne(User, {
+            where: {
+                id: userId,
+            },
+            relations: {
+                moderator_requests: true,
+            },
+        });
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.NOT_FOUND,
+                null,
+            );
+        }
+        // 检测是否已经申请过
+        if (
+            user?.moderator_requests.some(
+                (item) => item.target_community_id === communityId,
+            )
+        ) {
+            return Result.error(
+                MessageConstant.MODERATOR_REQUEST_ALREADY_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
+        const moderatorRequest = new ModeratorRequest();
+        moderatorRequest.user = user;
+        moderatorRequest.target_community_id = communityId;
+        await this.manager.save(moderatorRequest);
         return Result.success(MessageConstant.SUCCESS, null);
     }
 }

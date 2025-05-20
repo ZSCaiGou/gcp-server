@@ -17,17 +17,17 @@ export class Notification {
         type: 'bigint',
     })
     id: bigint;
-    
+
     @ManyToOne(() => User, (user) => user.notifications)
     @JoinColumn({ name: 'user_id' })
-    user:User
+    user: User;
 
     @Column({
         comment: '通知类型',
         type: 'enum',
         enum: NotificationType,
     })
-    tyep: NotificationType;
+    type: NotificationType;
 
     @Column({
         comment: '通知内容',

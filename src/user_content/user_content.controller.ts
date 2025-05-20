@@ -64,9 +64,13 @@ export class UserContentController {
     async getMainUserContent(
         @Req() req: Request,
         @Res() res: Response,
-        @Param('count') count: number,
+        @Query('count') count: number,
     ) {
-        const result = await this.userContentService.getMainUserContent(count);
+        const userId = req['user']?.id as string;
+        const result = await this.userContentService.getMainUserContent(
+            count,
+            userId,
+        );
         res.status(result.StatuCode).send(result);
     }
 

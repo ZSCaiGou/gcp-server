@@ -12,17 +12,24 @@ import {
     InteractionType,
     TargetType,
 } from 'src/common/entity/interaction.entity';
+import { MessageService } from 'src/message/message.service';
+import { NotificationType } from 'src/common/entity/notification.entity';
 
 @Injectable()
 export class CommentService {
     private readonly manager: EntityManager;
-    constructor(private dataSource: DataSource) {
+    constructor(
+        private dataSource: DataSource,
+        private readonly messageService: MessageService,
+    ) {
         this.manager = this.dataSource.manager;
     }
     // 创建评论
     async addComment(createCommentDto: CreateCommentDto, userId: string) {
         const { target_content_id, content, parent_id } = createCommentDto;
-        const user = await this.manager.findOneBy(User, { id: userId });
+        const user = (await this.manager.findOneBy(User, {
+            id: userId,
+        })) as User;
         // 创建评论
         const comment = this.manager.create(Comment, {
             target_content_id,
@@ -34,7 +41,16 @@ export class CommentService {
                 avatar_url: user?.profile.avatar_url,
                 level: user?.level.level,
             },
+            user,
         });
+        // 获取目标内容
+        const targetUserContent = (await this.manager.findOne(UserContent, {
+            where: {
+                id: target_content_id,
+            },
+            relations: ['user'],
+        })) as UserContent;
+        // 记录评论
         if (comment.parent_id != (-1 as unknown as bigint)) {
             // 获取父评论
             const parentComment = await this.manager.findOneBy(Comment, {
@@ -55,8 +71,20 @@ export class CommentService {
                 }
                 // 记录原始评论ID
                 comment.origin_id = parentComment.origin_id;
+
+                // 通知被回复用户
+                const parentUser = (await this.manager.findOneBy(User, {
+                    id: parentComment.user_info.id,
+                })) as User;
+                if (parentUser.id != user?.id) {
+                    await this.addNotifaication(
+                        parentUser,
+                        `${user?.profile.nickname || user?.username} 回复了你的评论 《${parentComment.content}》`,
+                    );
+                }
             }
         }
+
         // 保存评论
         const savedComment = await this.manager.save(comment);
         if (savedComment.parent_id == (-1 as unknown as bigint)) {
@@ -70,6 +98,14 @@ export class CommentService {
             'comment_count',
             1,
         );
+
+        if (targetUserContent.user.id != user?.id) {
+            // 通知用户内容作者
+            await this.addNotifaication(
+                targetUserContent.user,
+                `${user?.profile.nickname || user?.username} 评论了你的内容 《${targetUserContent.title}》`,
+            );
+        }
 
         return Result.success(MessageConstant.SUCCESS, savedComment);
     }
@@ -118,6 +154,13 @@ export class CommentService {
                     isLiked: likedCommentIds.includes(comment.id.toString()),
                 };
             }),
+        );
+    }
+    async addNotifaication(user: User, content: string) {
+        await this.messageService.createMessage(
+            NotificationType.EVENT,
+            content,
+            user,
         );
     }
 }

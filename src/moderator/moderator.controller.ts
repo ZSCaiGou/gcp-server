@@ -63,13 +63,28 @@ export class ModeratorController {
         @Req() req: Request,
         @Res() res: Response,
         @Param('contentId') contentId: bigint,
-        @Body('action') action: 'approve' |'reject',
+        @Body('action') action: 'approve' | 'reject',
     ) {
         const moderId = req['user'].id as string;
         const result = await this.moderatorService.reviewContent(
             moderId,
             contentId,
             action,
+        );
+        res.status(result.StatuCode).send(result);
+    }
+
+    // 申请成为社区管理员
+    @Post('apply/:communityId')
+    async applyModerator(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Param('communityId') communityId: bigint,
+    ) {
+        const userId = req['user'].id as string;
+        const result = await this.moderatorService.applyModerator(
+            userId,
+            communityId,
         );
         res.status(result.StatuCode).send(result);
     }

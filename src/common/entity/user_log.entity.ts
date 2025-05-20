@@ -10,6 +10,11 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 
+export enum UserLogType {
+    LOGIN = 'login',
+    VISIT = 'visit',
+    ACTIVE = 'active',
+}
 @Entity({
     comment: '用户操作日志',
 })
@@ -20,18 +25,32 @@ export class UserLog {
     })
     id: bigint;
 
-    @ManyToOne(() => User, (user) => user.logs, {})
+    @ManyToOne(() => User, (user) => user.logs)
     @JoinColumn({ name: 'user_id' })
     user: User;
 
-    @Column({ type: 'varchar', length: 36, comment: '操作对象ID' })
+    @Column({
+        type: 'varchar',
+        length: 36,
+        comment: '操作对象ID',
+        default: null,
+    })
     target_id: string;
 
-    @Column({ type: 'varchar', length: 255, comment: '操作内容' })
+    @Column({
+        type: 'varchar',
+        length: 255,
+        comment: '操作内容',
+        default: null,
+    })
     content: string;
 
-    @Column({ type: 'varchar', length: 255, comment: '操作类型' })
-    type: string;
+    @Column({
+        type: 'enum',
+        enum: UserLogType,
+        comment: '操作类型',
+    })
+    type: UserLogType;
 
     @Column({
         type: 'timestamp',

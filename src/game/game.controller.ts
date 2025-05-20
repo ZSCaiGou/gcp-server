@@ -188,7 +188,7 @@ export class GameController {
     async adminDeleteCommunity(
         @Req() req: Request,
         @Res() res: Response,
-        @Body("community_ids") communityIds: bigint[],
+        @Body('community_ids') communityIds: bigint[],
     ) {
         const adminId = req['user'].id as string;
         const result = await this.gameService.adminDeleteCommunity(
@@ -202,8 +202,8 @@ export class GameController {
     async adminChangeCommunityStatus(
         @Req() req: Request,
         @Res() res: Response,
-        @Body("community_ids") communityIds: bigint[],
-        @Body("status") status: string,
+        @Body('community_ids') communityIds: bigint[],
+        @Body('status') status: string,
     ) {
         const adminId = req['user'].id as string;
         const result = await this.gameService.adminChangeCommunityStatus(
@@ -244,16 +244,21 @@ export class GameController {
             paginationFollowUserDto,
         );
         res.status(result.StatuCode).send(result);
-    
     }
     // 管理员获取社区管理员列表
     @Get('admin-get-moderators/:communityId')
-    async adminGetModerators(@Param('communityId') communityId: bigint, @Req() req: Request, @Res() res: Response) {
+    async adminGetModerators(
+        @Param('communityId') communityId: bigint,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
         const adminId = req['user'].id as string;
-        const result = await this.gameService.adminGetModerators(communityId, adminId);
+        const result = await this.gameService.adminGetModerators(
+            communityId,
+            adminId,
+        );
         res.status(result.StatuCode).send(result);
     }
-
 
     // 管理员分页获取版主申请列表
     @Get('admin-get-moderator-requests')
@@ -261,12 +266,13 @@ export class GameController {
         @Req() req: Request,
         @Res() res: Response,
         @Query() paginationModeratorRequestDto: PaginationModeratorRequestDto,
-    ){
+    ) {
         const adminId = req['user'].id as string;
-        const result = await this.gameService.adminGetModeratorRequestsPaginated(
-            paginationModeratorRequestDto,
-            adminId,
-        );
+        const result =
+            await this.gameService.adminGetModeratorRequestsPaginated(
+                paginationModeratorRequestDto,
+                adminId,
+            );
         res.status(result.StatuCode).send(result);
     }
 
@@ -275,15 +281,26 @@ export class GameController {
     async adminHandleModeratorRequest(
         @Req() req: Request,
         @Res() res: Response,
-        @Body("request_id") requestId: number,
-        @Body("status") status: ModeratorRequestStatus,
-    ){
+        @Body('request_id') requestId: number,
+        @Body('status') status: ModeratorRequestStatus,
+    ) {
         const adminId = req['user'].id as string;
         const result = await this.gameService.adminHandleModeratorRequest(
             adminId,
             requestId,
-            status ,
+            status,
         );
+        res.status(result.StatuCode).send(result);
+    }
+
+    // 搜索游戏社区
+    @Get('search-games')
+    async searchGames(
+        @Query('search') keyWord: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        const result = await this.gameService.getGameCommunitybySearch(keyWord);
         res.status(result.StatuCode).send(result);
     }
 }

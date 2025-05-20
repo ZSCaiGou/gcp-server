@@ -11,6 +11,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
     And,
+    Between,
     DataSource,
     EntityManager,
     In,
@@ -40,6 +41,12 @@ import { Topic } from 'src/common/entity/topic.entity';
 import { PaginationUserDto } from './dto/pagination-user.dto';
 import { AdminAddUserDto } from './dto/admin-add-user.dto';
 import { AdminDeleteModeratorDto } from './dto/admin-delete-moderator.dto';
+import { UserLog, UserLogType } from 'src/common/entity/user_log.entity';
+import {
+    Interaction,
+    InteractionType,
+    TargetType,
+} from 'src/common/entity/interaction.entity';
 
 @Injectable()
 export class UserService {
@@ -154,6 +161,36 @@ export class UserService {
                 null,
             );
         }
+        await this.createActiveLog(user);
+        // 获取粉丝数
+        const fansCount = await this.manager.count(Interaction, {
+            where: {
+                target_type: TargetType.USER,
+                type: InteractionType.FOLLOW,
+                target_user_id: userId,
+            },
+            relations: ['user'],
+        });
+        // 获取关注数
+        const followCount = await this.manager.count(Interaction, {
+            where: {
+                target_type: TargetType.USER,
+                type: InteractionType.FOLLOW,
+                user: {
+                    id: userId,
+                },
+            },
+            relations: ['user'],
+        });
+        // 获取收藏数
+        const collectCount = await this.manager.count(Interaction, {
+            where: {
+                user: {
+                    id: userId,
+                },
+                type: InteractionType.COLLECT,
+            },
+        });
         // 返回的数据
         const data = {
             id: user.id,
@@ -168,6 +205,9 @@ export class UserService {
             level: user.level,
             roles: user.roles.map((role) => role.role_name),
             is_default_password: user.is_default_password,
+            fans_count: fansCount,
+            follow_count: followCount,
+            collect_count: collectCount,
         };
 
         return Result.success(MessageConstant.SUCCESS, data);
@@ -271,18 +311,18 @@ export class UserService {
                 );
             }
         }
-        const dynamicContentList = await this.manager.findBy(UserContent, {
-            user_id: targetUserId,
-            type: UserContentType.POST,
-            status: In(status),
+        const dynamicContentList = await this.manager.find(UserContent, {
+            where: {
+                user: {
+                    id: targetUserId,
+                },
+                type: UserContentType.POST,
+                status: In(status),
+            },
+            relations: ['user'],
         });
         const data = await Promise.all(
             dynamicContentList.map(async (content) => {
-                const createUser = await this.manager.findOne(User, {
-                    where: {
-                        id: content.user_id,
-                    },
-                });
                 // 获取游戏标签
                 const gameTags: Game[] = await this.manager.findBy(Game, {
                     id: In(content.game_ids),
@@ -301,12 +341,12 @@ export class UserService {
                     content: content.content,
                     type: content.type,
                     user_info: {
-                        id: createUser?.id,
-                        nickname: createUser?.profile.nickname
-                            ? createUser?.profile.nickname
-                            : createUser?.username,
-                        avatar_url: createUser?.profile.avatar_url,
-                        level: createUser?.level.level,
+                        id: content.user.id,
+                        nickname: content.user.profile.nickname
+                            ? content.user.profile.nickname
+                            : content.user.username,
+                        avatar_url: content.user.profile.avatar_url,
+                        level: content.user.level.level,
                     },
                     game_tags: gameTags.map((game) => ({
                         id: game.id,
@@ -338,22 +378,22 @@ export class UserService {
                 );
             }
         }
-        const uploadContentList = await this.manager.findBy(UserContent, {
-            user_id: targetUserId,
-            type: In([
-                UserContentType.GUIDE,
-                UserContentType.RESOURCE,
-                UserContentType.NEWS,
-            ]),
-            status: In(status),
+        const uploadContentList = await this.manager.find(UserContent, {
+            where: {
+                user: {
+                    id: targetUserId,
+                },
+                type: In([
+                    UserContentType.GUIDE,
+                    UserContentType.RESOURCE,
+                    UserContentType.NEWS,
+                ]),
+                status: In(status),
+            },
+            relations: ['user'],
         });
         const data = await Promise.all(
             uploadContentList.map(async (content) => {
-                const createUser = await this.manager.findOne(User, {
-                    where: {
-                        id: content.user_id,
-                    },
-                });
                 // 获取游戏标签
                 const gameTags: Game[] = await this.manager.findBy(Game, {
                     id: In(content.game_ids),
@@ -372,12 +412,12 @@ export class UserService {
                     content: content.content,
                     type: content.type,
                     user_info: {
-                        id: createUser?.id,
-                        nickname: createUser?.profile.nickname
-                            ? createUser?.profile.nickname
-                            : createUser?.username,
-                        avatar_url: createUser?.profile.avatar_url,
-                        level: createUser?.level.level,
+                        id: content.user.id,
+                        nickname: content.user.profile.nickname
+                            ? content.user.profile.nickname
+                            : content.user.username,
+                        avatar_url: content.user.profile.avatar_url,
+                        level: content.user.level.level,
                     },
                     game_tags: gameTags.map((game) => ({
                         id: game.id,
@@ -1035,5 +1075,51 @@ export class UserService {
         );
         // 格式化返回数据
         return Result.success(MessageConstant.SUCCESS, null);
+    }
+
+    async createLoginLog(user: User) {
+        const loginLog = this.manager.create(UserLog, {
+            user,
+            type: UserLogType.LOGIN,
+            content: '登录',
+        });
+        await this.manager.save(loginLog);
+        // 更新用户最后登录时间
+        user.last_login_time = new Date();
+        await this.manager.save(user);
+    }
+
+    async createActiveLog(user: User) {
+        if (!user) {
+            return;
+        }
+        const activeLog = this.manager.create(UserLog, {
+            type: UserLogType.ACTIVE,
+            content: '活跃',
+        });
+        activeLog.user = user;
+        const saved = await this.manager.save(activeLog);
+        // 更新用户活跃时间
+        user.update_time = new Date();
+        await this.manager.save(user);
+        // 判断用户是不是今天的第一次活跃
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(todayStart);
+        todayEnd.setDate(todayEnd.getDate() + 1);
+        const count = await this.manager.count(UserLog, {
+            where: {
+                user: {
+                    id: user.id,
+                },
+                type: UserLogType.ACTIVE,
+                created_at: Between(todayStart, todayEnd),
+            },
+            relations: ['user'],
+        });
+        if (count === 1) {
+            user.level.ex += 10;
+            await this.manager.save(user);
+        }
     }
 }
