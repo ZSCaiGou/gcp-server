@@ -7,6 +7,11 @@ import { User } from 'src/common/entity/user.entity';
 import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
 import { UserContent } from 'src/common/entity/user_content.entity';
+import {
+    Interaction,
+    InteractionType,
+    TargetType,
+} from 'src/common/entity/interaction.entity';
 
 @Injectable()
 export class CommentService {
@@ -27,6 +32,7 @@ export class CommentService {
                 id: user?.id,
                 nickname: user?.profile.nickname || user?.username,
                 avatar_url: user?.profile.avatar_url,
+                level: user?.level.level,
             },
         });
         if (comment.parent_id != (-1 as unknown as bigint)) {
@@ -68,7 +74,27 @@ export class CommentService {
         return Result.success(MessageConstant.SUCCESS, savedComment);
     }
 
-    async getCommentRepliesById(comment_id: string) {
+    async getCommentRepliesById(comment_id: string, userId: string) {
+        const likedCommentIds: string[] = [];
+        // 获取用户的所有点赞
+        if (userId !== null) {
+            const userLikedCommentIds = await this.manager.find(Interaction, {
+                where: {
+                    user: {
+                        id: userId,
+                    },
+                    type: InteractionType.LIKE,
+                    target_type: TargetType.COMMENT,
+                },
+                relations: ['user'],
+                select: ['target_id'],
+            });
+            likedCommentIds.push(
+                ...userLikedCommentIds.map(
+                    (item) => item.target_id as unknown as string,
+                ),
+            );
+        }
         const commentsReplies = await this.manager.find(Comment, {
             where: {
                 origin_id: comment_id as unknown as bigint,
@@ -89,6 +115,7 @@ export class CommentService {
                     created_at: comment.created_at,
                     likeCount: comment.like_count,
                     replyCount: comment.reply_count,
+                    isLiked: likedCommentIds.includes(comment.id.toString()),
                 };
             }),
         );

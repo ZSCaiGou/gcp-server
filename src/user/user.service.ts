@@ -258,11 +258,23 @@ export class UserService {
     }
 
     // 获取用户动态
-    async getUserDynamicContentList(userId: string) {
+    async getUserDynamicContentList(targetUserId: string, userId: string) {
+        const conUser = await this.manager.findOneBy(User, { id: userId });
+        const status: ContentStatus[] = [ContentStatus.APPROVED];
+        if (conUser) {
+            if (conUser.id === targetUserId) {
+                status.push(
+                    ContentStatus.APPROVED,
+                    ContentStatus.PENDING,
+                    ContentStatus.REJECTED,
+                    ContentStatus.HIDDEN,
+                );
+            }
+        }
         const dynamicContentList = await this.manager.findBy(UserContent, {
-            user_id: userId,
+            user_id: targetUserId,
             type: UserContentType.POST,
-            status: Not(ContentStatus.DELETED),
+            status: In(status),
         });
         const data = await Promise.all(
             dynamicContentList.map(async (content) => {
@@ -313,15 +325,27 @@ export class UserService {
     }
 
     // 获取用户投稿内容列表
-    async getUserUploadContentList(userId: string) {
+    async getUserUploadContentList(targetUserId: string, userId: string) {
+        const conUser = await this.manager.findOneBy(User, { id: userId });
+        const status: ContentStatus[] = [ContentStatus.APPROVED];
+        if (conUser) {
+            if (conUser.id === targetUserId) {
+                status.push(
+                    ContentStatus.APPROVED,
+                    ContentStatus.PENDING,
+                    ContentStatus.REJECTED,
+                    ContentStatus.HIDDEN,
+                );
+            }
+        }
         const uploadContentList = await this.manager.findBy(UserContent, {
-            user_id: userId,
+            user_id: targetUserId,
             type: In([
                 UserContentType.GUIDE,
                 UserContentType.RESOURCE,
                 UserContentType.NEWS,
             ]),
-            status: Not(ContentStatus.DELETED),
+            status: In(status),
         });
         const data = await Promise.all(
             uploadContentList.map(async (content) => {
@@ -929,7 +953,6 @@ export class UserService {
         // 添加游戏版主
         user.managed_communities.push(game);
         const savedUser = await this.manager.save(user);
-
 
         // 格式化返回数据
         return Result.success(MessageConstant.SUCCESS, {

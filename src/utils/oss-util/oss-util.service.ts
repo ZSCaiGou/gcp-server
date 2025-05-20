@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 const OSS = require('ali-oss');
 @Injectable()
 export class OssUtilService {
     private ossClient;
-
+    private readonly logger = new Logger(OssUtilService.name);
     constructor(private configService: ConfigService) {
         const keyId = this.configService.get<string>('OSS_ACCESS_KEY_ID');
         const keySecret = this.configService.get<string>(
@@ -58,7 +58,7 @@ export class OssUtilService {
         );
         return result.url;
     }
-
+    // 上传社区图片
     async uploadCommunityImg(file: Express.Multer.File, fileName: string) {
         if (!this.ossClient) {
             throw new Error('oss client not init');
@@ -77,5 +77,23 @@ export class OssUtilService {
         }
         const result = await this.ossClient.delete(pictureUrl);
         return result;
+    }
+
+    // 上传游戏资源
+    async uploadGameResource(
+        file: Express.Multer.File,
+        fileName: string,
+        gameName: string,
+    ) {
+        if (!this.ossClient) {
+            throw new Error('oss client not init');
+        }
+        this.logger.log('上传社区资源');
+        const result = await this.ossClient.put(
+            'game-resource/' + gameName + '/' + fileName,
+            file.buffer,
+        );
+        this.logger.log('上传成功：' + result.url);
+        return result.url;
     }
 }

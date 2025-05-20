@@ -94,6 +94,7 @@ export class Comment {
         id: string;
         nickname: string;
         avatar_url: string;
+        level: number;
     }
     @ManyToOne(() => User, (user) => user.user_comments)
     @JoinColumn({ name: 'user_id' })

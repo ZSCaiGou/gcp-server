@@ -315,6 +315,7 @@ export class GameService {
                 const result = await this.userContentService.getUserContentById(
                     post.id as unknown as string,
                     null,
+                    'hottest',
                 );
                 return result.Data;
             }),
@@ -346,6 +347,7 @@ export class GameService {
                 const result = await this.userContentService.getUserContentById(
                     post.id as unknown as string,
                     null,
+                    'hottest',
                 );
                 return result.Data;
             }),
@@ -377,6 +379,7 @@ export class GameService {
                 const result = await this.userContentService.getUserContentById(
                     post.id as unknown as string,
                     null,
+                    'hottest',
                 );
                 return result.Data;
             }),

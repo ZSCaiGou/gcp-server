@@ -180,7 +180,11 @@ export class UserContentService {
     }
 
     // 根据id获取用户内容
-    async getUserContentById(id: string, userId: string | null) {
+    async getUserContentById(
+        id: string,
+        userId: string | null,
+        sortType: 'newest' | 'hottest' | 'oldest',
+    ) {
         const interActionStatus: {
             isLike: boolean;
             isCollect: boolean;
@@ -261,16 +265,16 @@ export class UserContentService {
                 ...likedComments.map((comment) => comment.target_id),
             );
             // 获取用户是否关注了作者
-            const focus = await this.manager.count(Interaction,{
-                where:{
-                    target_type:TargetType.USER,
-                    type:InteractionType.FOLLOW,
-                    user:{
-                        id:userId
+            const focus = await this.manager.count(Interaction, {
+                where: {
+                    target_type: TargetType.USER,
+                    type: InteractionType.FOLLOW,
+                    user: {
+                        id: userId,
                     },
-                    target_user_id:createUser?.id
-                }
-            })
+                    target_user_id: createUser?.id,
+                },
+            });
             interActionStatus.isFocused = focus > 0;
         }
 
@@ -282,7 +286,15 @@ export class UserContentService {
         const topicTags: Topic[] = await this.manager.findBy(Topic, {
             id: In(userContent.topic_ids),
         });
-
+        const order = {};
+        if (sortType === 'newest') {
+            order['created_at'] = 'DESC';
+        } else if (sortType === 'oldest') {
+            order['created_at'] = 'ASC';
+        } else if (sortType === 'hottest') {
+            order['reply_count'] = 'DESC';
+            order['like_count'] = 'DESC';
+        }
         // 默认获取最新的500条获取评论
         const comments = await this.manager.find(Comment, {
             where: {
@@ -290,9 +302,7 @@ export class UserContentService {
                 status: CommentStatus.NORMAL,
                 target_content_id: userContent.id,
             },
-            order: {
-                created_at: 'desc',
-            },
+            order,
             take: 500,
         });
 

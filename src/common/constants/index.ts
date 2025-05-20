@@ -1,5 +1,3 @@
-
-
 export const ConfigKey = {
     JWT_SECRET: 'JWT_SECRET',
     JWT_EXPIRE_TIME: 'JWT_EXPIRE_TIME',
@@ -34,7 +32,7 @@ export const MessageConstant = {
     USER_CONTENT_NOT_APPROVED: '用户内容未通过审核',
     USER_CONTENT_NOT_PUBLIC: '用户内容未公开',
     USER_CONTENT_ALLOW_HAVE_ONE_COMMUNITY: '用户内容只能属于一个社区',
-    
+
     USER_NOT_ADMIN: '不是管理员',
     USER_NOT_MODERATOR: '不是版主',
     USER_NOT_APPROVED: '用户未通过审核',
@@ -121,10 +119,11 @@ export const MessageConstant = {
     COMMUNITY_BANNED_NOT_EXPIRED: '用户禁言记录未过期',
     COMMUNITY_BANNED_EXPIRE_TIME_NOT_FOUND: '用户禁言记录过期时间未找到',
     COMMUNITY_BANNED_EXPIRE_TIME_ALREADY_EXIST: '用户禁言记录过期时间已存在',
-    COMMUNITY_BANNED_EXPIRE_TIME_NOT_OWNER: '不是该用户禁言记录的过期时间的拥有者',
+    COMMUNITY_BANNED_EXPIRE_TIME_NOT_OWNER:
+        '不是该用户禁言记录的过期时间的拥有者',
     USER_ALREADY_MOD: '用户已经是游戏的版主',
     USER_NOT_MOD: '用户不是游戏的版主',
-    ADMIN_NOT_ALLOW_BECOME_MODERATOR:"管理员不能成为版主",
+    ADMIN_NOT_ALLOW_BECOME_MODERATOR: '管理员不能成为版主',
     MODERATOR_REQUEST_NOT_FOUND: '版主申请不存在',
     MODERATOR_REQUEST_ALREADY_EXIST: '版主申请已存在',
     MODERATOR_REQUEST_NOT_OWNER: '不是该版主申请的拥有者',
@@ -145,26 +144,31 @@ export const MessageConstant = {
     MODERATOR_REQUEST_BANNED_EXPIRED: '用户禁言记录已过期',
     MODERATOR_REQUEST_BANNED_ALREADY_EXPIRED: '用户禁言记录已过期',
     MODERATOR_REQUEST_BANNED_NOT_EXPIRED: '用户禁言记录未过期',
-    MODERATOR_REQUEST_BANNED_EXPIRE_TIME_NOT_FOUND: '用户禁言记录过期时间未找到',
-    MODERATOR_REQUEST_BANNED_EXPIRE_TIME_ALREADY_EXIST: '用户禁言记录过期时间已存在',
-    MODERATOR_REQUEST_BANNED_EXPIRE_TIME_NOT_OWNER: '不是该用户禁言记录的过期时间的拥有者',
+    MODERATOR_REQUEST_BANNED_EXPIRE_TIME_NOT_FOUND:
+        '用户禁言记录过期时间未找到',
+    MODERATOR_REQUEST_BANNED_EXPIRE_TIME_ALREADY_EXIST:
+        '用户禁言记录过期时间已存在',
+    MODERATOR_REQUEST_BANNED_EXPIRE_TIME_NOT_OWNER:
+        '不是该用户禁言记录的过期时间的拥有者',
     MODERATOR_REQUEST_ALREADY_BECOME_MODERATOR: '用户已经是游戏的版主',
     MODERATOR_REQUEST_NOT_BECOME_MODERATOR: '用户不是游戏的版主',
     MODERATOR_REQUEST_ALREADY_BECOME_ADMIN: '用户已经是游戏的管理员',
     MODERATOR_REQUEST_NOT_BECOME_ADMIN: '用户不是游戏的管理员',
     MODERATOR_REQUEST_ALREADY_HANDLED: '版主申请已处理',
-    EMAIL_NOT_MATCH:"邮箱不匹配",
-    PHONE_NOT_MATCH:"手机号不匹配",
-    EMAIL_ALREADY_USED:"邮箱已被使用",
-    PHONE_ALREADY_USED:"手机号已被使用",
-    EMAIL_NOT_EXIST:"邮箱不存在",
-    PHONE_NOT_EXIST:"手机号不存在",
-    EMAIL_OR_PHONE_NOT_MATCH:"邮箱或手机号不匹配",
-    EMAIL_OR_PHONE_ALREADY_USED:"邮箱或手机号已被使用",
-    EMAIL_OR_PHONE_NOT_EXIST:"邮箱或手机号不存在",
-    EMAIL_OR_PHONE_ALREADY_EXIST:"邮箱或手机号已存在",
-    EMAIL_OR_PHONE_NOT_ALLOW_REGISTER:"邮箱或手机号不允许注册",
-}
+    EMAIL_NOT_MATCH: '邮箱不匹配',
+    PHONE_NOT_MATCH: '手机号不匹配',
+    EMAIL_ALREADY_USED: '邮箱已被使用',
+    PHONE_ALREADY_USED: '手机号已被使用',
+    EMAIL_NOT_EXIST: '邮箱不存在',
+    PHONE_NOT_EXIST: '手机号不存在',
+    EMAIL_OR_PHONE_NOT_MATCH: '邮箱或手机号不匹配',
+    EMAIL_OR_PHONE_ALREADY_USED: '邮箱或手机号已被使用',
+    EMAIL_OR_PHONE_NOT_EXIST: '邮箱或手机号不存在',
+    EMAIL_OR_PHONE_ALREADY_EXIST: '邮箱或手机号已存在',
+    EMAIL_OR_PHONE_NOT_ALLOW_REGISTER: '邮箱或手机号不允许注册',
+    RESOURCE_TYPE_ERROR: '资源类型错误',
+    RESOURCE_NAME_EXIST: '资源已存在,请修改名称或版本号',
+};
 
 export enum AbilityAction {
     MANAGE = 'MANAGE',
@@ -176,31 +180,31 @@ export enum AbilityAction {
     DOWNLOAD = 'DOWNLOAD',
 }
 export enum AbilityResource {
-    User='User',
-    Comment='Comment',
-    Feedback='Feedback',
-    Game='Game',
-    Interaction='Interaction',
-    MfaSetting='MfaSetting',
-    Notification='Notification',
-    Permission='Permission',
-    Resource='Resource',
-    Role='Role',
-    SupportTicket='SupportTicket',
-    TaskReward='TaskReward',
-    Topic='Topic',
-    UserAuth='UserAuth',
-    UserContent='UserContent',
-    UserProfile='UserProfile',
-    ALL='ALL',
+    User = 'User',
+    Comment = 'Comment',
+    Feedback = 'Feedback',
+    Game = 'Game',
+    Interaction = 'Interaction',
+    MfaSetting = 'MfaSetting',
+    Notification = 'Notification',
+    Permission = 'Permission',
+    Resource = 'Resource',
+    Role = 'Role',
+    SupportTicket = 'SupportTicket',
+    TaskReward = 'TaskReward',
+    Topic = 'Topic',
+    UserAuth = 'UserAuth',
+    UserContent = 'UserContent',
+    UserProfile = 'UserProfile',
+    ALL = 'ALL',
 }
 
-
-export enum ExpPoint{
+export enum ExpPoint {
     EXP_POINT_UPLOAD_CONTENT = 10, // 上传内容
     EXP_POINT_COMMENT_CONTENT = 2, // 评论内容
     EXP_POINT_LOGIN = 10, // 登录
 }
 
 export const IS_PUBLIC_KEY = 'isPublic';
-export const DEFAULT_AVATAR_URL = "https://gcpserver.oss-cn-chengdu.aliyuncs.com/avatar/default.png?x-oss-process=style/image-compress"
+export const DEFAULT_AVATAR_URL =
+    'https://gcpserver.oss-cn-chengdu.aliyuncs.com/avatar/default.png?x-oss-process=style/image-compress';

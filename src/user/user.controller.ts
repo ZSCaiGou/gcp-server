@@ -75,7 +75,11 @@ export class UserController {
     }
     @Get('get-user-by-id/:id')
     @Public()
-    async getUserById(@Param('id') id: string, @Res() res: Response, @Req() req: Request){
+    async getUserById(
+        @Param('id') id: string,
+        @Res() res: Response,
+        @Req() req: Request,
+    ) {
         const result = await this.userService.findOneById(id);
         res.status(result.StatuCode).send(result);
     }
@@ -108,16 +112,31 @@ export class UserController {
     }
 
     @Get('dynamic/:id')
-    async getUserDynamicContentList(@Req() req: Request, @Res() res: Response,@Param('id') id: string) {
+    @Public()
+    async getUserDynamicContentList(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Param('id') id: string,
+    ) {
         const userId = req['user'].id as string;
-        const result = await this.userService.getUserDynamicContentList(id);
+        const result = await this.userService.getUserDynamicContentList(
+            id,
+            userId,
+        );
         res.status(result.StatuCode).send(result);
     }
 
     @Get('upload/:id')
-    async getUserUploadContentList(@Req() req: Request, @Res() res: Response, @Param('id') id: string) {
+    async getUserUploadContentList(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Param('id') id: string,
+    ) {
         const userId = req['user'].id as string;
-        const result = await this.userService.getUserUploadContentList(id);
+        const result = await this.userService.getUserUploadContentList(
+            id,
+            userId,
+        );
         res.status(result.StatuCode).send(result);
     }
     @Get('admin-users-paginated')
@@ -188,23 +207,41 @@ export class UserController {
     }
     // 搜索用户
     @Get('admin-search-user')
-    async adminSearchUser( @Req() req: Request, @Res() res: Response, @Query('search') search: string){
+    async adminSearchUser(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Query('search') search: string,
+    ) {
         const adminId = req['user'].id as string;
-        const result = await this.userService.adminSearchUser(adminId,search);
+        const result = await this.userService.adminSearchUser(adminId, search);
         res.status(result.StatuCode).send(result);
     }
     // 管理员添加社区版主
     @Post('admin-add-moderator')
-    async adminAddModerator(@Req() req: Request, @Res() res: Response, @Body() addModeratorDto: AdminAddModeratorDto) {
+    async adminAddModerator(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body() addModeratorDto: AdminAddModeratorDto,
+    ) {
         const adminId = req['user'].id as string;
-        const result = await this.userService.adminAddModerator( adminId,addModeratorDto);
+        const result = await this.userService.adminAddModerator(
+            adminId,
+            addModeratorDto,
+        );
         res.status(result.StatuCode).send(result);
     }
 
-    @Patch("admin-delete-moderator")
-    async adminDeleteModerator(@Req() req: Request, @Res() res: Response, @Body() deleteModeratorDto: AdminDeleteModeratorDto) {
+    @Patch('admin-delete-moderator')
+    async adminDeleteModerator(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Body() deleteModeratorDto: AdminDeleteModeratorDto,
+    ) {
         const adminId = req['user'].id as string;
-        const result = await this.userService.adminDeleteModerator(adminId, deleteModeratorDto);
+        const result = await this.userService.adminDeleteModerator(
+            adminId,
+            deleteModeratorDto,
+        );
         res.status(result.StatuCode).send(result);
     }
 }

@@ -5,6 +5,7 @@ import { UpdateTopicDto } from './dto/update-topic.dto';
 import { Topic } from 'src/common/entity/topic.entity';
 import { Result } from 'src/common/result/Result';
 import { MessageConstant } from 'src/common/constants';
+import { User } from 'src/common/entity/user.entity';
 
 @Injectable()
 export class TopicService {
@@ -34,78 +35,117 @@ export class TopicService {
     }
 
     // 创建话题
-    async createTopic(createTopicDto: CreateTopicDto){
+    async createTopic(createTopicDto: CreateTopicDto, userId: string) {
+        const user = await this.mannager.findOne(User, {
+            where: {
+                id: userId,
+            },
+        });
+        if (!user) {
+            return Result.error(
+                MessageConstant.USER_NOT_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
+        }
         // 创建话题
         const topic = this.mannager.create(Topic, createTopicDto);
         // 话题是否以及存在
         const existTopic = await this.mannager.findOne(Topic, {
-            where:{
-                title:topic.title
-            }
+            where: {
+                title: topic.title,
+            },
         });
-        if(existTopic){
-            return Result.error(MessageConstant.TOPIC_ALREADY_EXIST, HttpStatus.BAD_REQUEST, null)
+        if (existTopic) {
+            return Result.error(
+                MessageConstant.TOPIC_ALREADY_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
         }
+        topic.user = user;
         // 保存话题
         const savedTopic = await this.mannager.save(topic);
         return Result.success(MessageConstant.SUCCESS, savedTopic);
     }
 
     // 更新话题
-    async updateTopic( user_id: string,updateTopicDto: UpdateTopicDto){
+    async updateTopic(user_id: string, updateTopicDto: UpdateTopicDto) {
         // 话题是否存在
         const existTopic = await this.mannager.findOne(Topic, {
-            where:{
-                title:updateTopicDto.title
+            where: {
+                title: updateTopicDto.title,
             },
-            relations:{
-                user:true
-            }
+            relations: {
+                user: true,
+            },
         });
-        if(!existTopic){
-            return Result.error(MessageConstant.TOPIC_NOT_FOUND, HttpStatus.BAD_REQUEST, null)
+        if (!existTopic) {
+            return Result.error(
+                MessageConstant.TOPIC_NOT_FOUND,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
         }
         // 判断是否是该话题的拥有者
-        if(existTopic.user.id!== user_id){
-            return Result.error(MessageConstant.TOPIC_NOT_OWNER, HttpStatus.BAD_REQUEST, null)
+        if (existTopic.user.id !== user_id) {
+            return Result.error(
+                MessageConstant.TOPIC_NOT_OWNER,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
         }
 
         // 判断更新后的话题是否已经存在
         const existTopicAfterUpdate = await this.mannager.findOne(Topic, {
-            where:{
-                title:updateTopicDto.title
-            }
+            where: {
+                title: updateTopicDto.title,
+            },
         });
-        if(existTopicAfterUpdate){
-            return Result.error(MessageConstant.TOPIC_ALREADY_EXIST, HttpStatus.BAD_REQUEST, null)
+        if (existTopicAfterUpdate) {
+            return Result.error(
+                MessageConstant.TOPIC_ALREADY_EXIST,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
         }
         // 更新话题
-        const updatedTopic = await this.mannager.update(Topic,existTopic.id,updateTopicDto);
+        const updatedTopic = await this.mannager.update(
+            Topic,
+            existTopic.id,
+            updateTopicDto,
+        );
         return Result.success(MessageConstant.SUCCESS, updatedTopic);
-
     }
     // 删除话题
-    async deleteTopic( user_id: string,topic_id: string){
+    async deleteTopic(user_id: string, topic_id: string) {
         // 话题是否存在
         const existTopic = await this.mannager.findOne(Topic, {
-            where:{
-                title:topic_id
+            where: {
+                title: topic_id,
             },
-            relations:{
-                user:true
-            }
+            relations: {
+                user: true,
+            },
         });
-        if(!existTopic){
-            return Result.error(MessageConstant.TOPIC_NOT_FOUND, HttpStatus.BAD_REQUEST, null)
+        if (!existTopic) {
+            return Result.error(
+                MessageConstant.TOPIC_NOT_FOUND,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
         }
         // 判断是否是该话题的拥有者
-        if(existTopic.user.id!== user_id){
-            return Result.error(MessageConstant.TOPIC_NOT_OWNER, HttpStatus.BAD_REQUEST, null)
+        if (existTopic.user.id !== user_id) {
+            return Result.error(
+                MessageConstant.TOPIC_NOT_OWNER,
+                HttpStatus.BAD_REQUEST,
+                null,
+            );
         }
-        
+
         // 删除话题
-        const deletedTopic = await this.mannager.delete(Topic,existTopic.id);
+        const deletedTopic = await this.mannager.delete(Topic, existTopic.id);
         return Result.success(MessageConstant.SUCCESS, deletedTopic);
     }
-
 }

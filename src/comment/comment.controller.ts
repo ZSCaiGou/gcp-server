@@ -40,8 +40,9 @@ export class CommentController {
         @Req() req: Request,
         @Res() res: Response,
     ) {
+        const userId = req['user'].id as string;
         const result =
-            await this.commentService.getCommentRepliesById(comment_id);
+            await this.commentService.getCommentRepliesById(comment_id,userId);
         res.status(result.StatuCode).send(result);
     }
 }

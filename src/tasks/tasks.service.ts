@@ -27,7 +27,7 @@ type BehaviorType = 'view' | 'like' | 'collect' | 'comment' | 'share';
 export interface UserBehavior {
     user_id: string;
     item_id: bigint;
-    behavior_type: BehaviorType; 
+    behavior_type: BehaviorType;
     weight: number; // 权重
     timeStamp: Date;
     social_links: string[]; // 社交关系
@@ -73,7 +73,10 @@ export class TasksService {
             if (userContent) {
                 const content = userContent.content;
                 const result = await this.openAIService.contetnReview(content);
-
+                if (!result) {
+                    this.logger.log('内容审核失败');
+                    return;
+                }
                 if (result.level === 'none') {
                     userContent.status = ContentStatus.APPROVED;
                     userContent.check_result = result.reason;
@@ -114,68 +117,5 @@ export class TasksService {
     @Cron(CronExpression.EVERY_2_HOURS)
     async handleGetRecommendBaseData() {
         this.logger.log('开始获取推荐系统的基础数据');
-        const AllUser = await this.manager.find(User, {
-            where: {
-                status: UserStatus.ACTIVE,
-            },
-        });
-        const UserIds = AllUser.map((user) => user.id);
-        
-        const AllUserBehaviorList = await Promise.all(
-            UserIds.map(async (userId) => {
-                
-                // 获取用户的行为数据
-                // 1. 点赞
-                const likeBh = await this.manager.find(Interaction, {
-                    where: {
-                        user: { id: userId },
-                        type: InteractionType.LIKE,
-                        target_type: TargetType.CONTENT,
-                    },
-                    relations: {
-                        user: true,
-                    },
-                });
-                // 2. 收藏
-                const collectBh = await this.manager.find(Interaction, {
-                    where: {
-                        user: { id: userId },
-                        type: InteractionType.COLLECT,
-                        target_type: TargetType.CONTENT,
-                    },
-                    relations: {
-                        user: true,
-                    },
-                });
-                //3. 分享
-                const shareBh = await this.manager.find(Interaction, {
-                    where: {
-                        user: { id: userId },
-                        type: InteractionType.SHARE,
-                        target_type: TargetType.CONTENT,
-                    },
-                    relations: {
-                        user: true,
-                    },
-                });
-                //4. 浏览
-                const viewBh = await this.manager.find(UserViewHistory,{
-                    where:{
-                        user:{
-                            id:userId
-                        }
-                    },
-                    relations:{
-                        user:true,
-                    }
-                })
-                //5. 评论
-                const commentBh = await this.manager.find(Comment)
-
-            }),
-        );
     }
-
-
-    
 }

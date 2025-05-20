@@ -61,7 +61,11 @@ export class UserContentController {
     // 获取主页用户内容
     @Get('random-content')
     @Public()
-    async getMainUserContent(@Req() req: Request, @Res() res: Response,@Param('count') count: number) {
+    async getMainUserContent(
+        @Req() req: Request,
+        @Res() res: Response,
+        @Param('count') count: number,
+    ) {
         const result = await this.userContentService.getMainUserContent(count);
         res.status(result.StatuCode).send(result);
     }
@@ -71,6 +75,7 @@ export class UserContentController {
     @Public()
     async getUserContentById(
         @Query('id') id: string,
+        @Query('sortType') sortType: 'newest' | 'hottest' | 'oldest',
         @Req() req: Request,
         @Res() res: Response,
     ) {
@@ -78,6 +83,7 @@ export class UserContentController {
         const result = await this.userContentService.getUserContentById(
             id,
             userId,
+            sortType,
         );
         res.status(result.StatuCode).send(result);
     }

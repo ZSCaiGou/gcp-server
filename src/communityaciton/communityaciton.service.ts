@@ -50,6 +50,7 @@ export class CommunityacitonService {
                 null,
             );
         }
+        const result: { origin_id?: bigint } = {};
         // 判断是否已经点赞
         const existInteraction = await this.manager.findOne(Interaction, {
             where: {
@@ -64,9 +65,10 @@ export class CommunityacitonService {
                 user: true,
             },
         });
+        // 取消点赞
         if (existInteraction) {
             await this.manager.delete(Interaction, existInteraction.id);
-            if(addLikeDto.target_type === TargetType.CONTENT){
+            if (addLikeDto.target_type === TargetType.CONTENT) {
                 await this.manager.increment(
                     UserContent,
                     {
@@ -75,7 +77,7 @@ export class CommunityacitonService {
                     'like_count',
                     -1,
                 );
-            }else{
+            } else {
                 await this.manager.increment(
                     Comment,
                     {
@@ -84,8 +86,15 @@ export class CommunityacitonService {
                     'like_count',
                     -1,
                 );
+                // origin_id用来判断是否是评论回复
+                const { origin_id } = (await this.manager.findOne(Comment, {
+                    where: {
+                        id: addLikeDto.target_id as unknown as bigint,
+                    },
+                })) as Comment;
+                result.origin_id = origin_id;
             }
-            return Result.success(MessageConstant.SUCCESS, null);
+            return Result.success(MessageConstant.SUCCESS, result);
         }
         // 新增点赞
         const interaction = this.manager.create(Interaction, {
@@ -96,7 +105,7 @@ export class CommunityacitonService {
         });
         interaction.user = user;
         await this.manager.save(interaction);
-        if(addLikeDto.target_type === TargetType.CONTENT){
+        if (addLikeDto.target_type === TargetType.CONTENT) {
             await this.manager.increment(
                 UserContent,
                 {
@@ -105,16 +114,23 @@ export class CommunityacitonService {
                 'like_count',
                 1,
             );
-        }else{
+        } else {
             await this.manager.increment(
-                Comment,{
+                Comment,
+                {
                     id: addLikeDto.target_id as unknown as bigint,
                 },
                 'like_count',
                 1,
             );
+            const { origin_id } = (await this.manager.findOne(Comment, {
+                where: {
+                    id: addLikeDto.target_id as unknown as bigint,
+                },
+            })) as Comment;
+            result.origin_id = origin_id;
         }
-        return Result.success(MessageConstant.SUCCESS, null);
+        return Result.success(MessageConstant.SUCCESS, result);
     }
 
     // 获取用户收藏
@@ -269,4 +285,6 @@ export class CommunityacitonService {
         await this.manager.save(interaction);
         return Result.success(MessageConstant.SUCCESS, null);
     }
+    // 分享用户内容
+    // async shareUserContent() {}
 }

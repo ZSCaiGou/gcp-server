@@ -25,9 +25,9 @@ export enum ResourceStatus {
  * @property {string} DOCUMENT - 文档
  */
 export enum ResourceType {
-    IMAGE = 'image',
-    VIDEO = 'video',
-    DOCUMENT = 'document',
+    OFFICIAL = 'official',
+    PATCH = 'patch',
+    MOD = 'mod',
 }
 @Entity({
     comment: '资源表',
@@ -43,7 +43,7 @@ export class Resource {
     @JoinColumn({
         name: 'user_id',
     })
-    user:User
+    user: User;
     // 关联的游戏社区
     @ManyToOne(() => Game, (game) => game.published_resources)
     @JoinColumn({
@@ -53,42 +53,51 @@ export class Resource {
 
     @Column({
         type: 'varchar',
-        length:36
-        
+        length: 255,
+        comment: '资源名称',
     })
-    user_id: string;
-
+    file_name: string;
     @Column({
-        type: 'bigint',
-        comment:'资源所属游戏'
+        type: 'varchar',
+        length: 255,
+        comment: '资源路径',
     })
-    game_id: number;
+    file_url: string;
+    @Column({
+        type: 'float',
+        precision: 10,
+        scale: 2,
+        comment: '资源大小 单位：MB 保留两位小数',
+    })
+    file_size: number;
+    @Column({
+        type: 'varchar',
+        length: 255,
+        comment: '资源版本',
+        default: '1.0.0',
+    })
+    file_version: string;
+    @Column({
+        type: 'enum',
+        enum: ResourceType,
+        comment: '资源类型',
+        default: ResourceType.MOD,
+    })
+    file_type: ResourceType;
 
     @Column({
         type: 'varchar',
         length: 255,
-        comment:'资源路径'
-    })
-    file_url: string;
-
-    @Column({
-        type:"enum",
-        enum:ResourceType,
-        comment:'资源类型'
-    })
-    file_type: ResourceStatus;
-
-    @Column({
-        type:"varchar",
-        length:255,
-        comment:'版权信息'
+        comment: '版权信息',
+        default: '',
     })
     copyright: string;
 
     @Column({
-        type:"enum",
-        enum:ResourceStatus,
-        comment:'资源状态'
+        type: 'enum',
+        enum: ResourceStatus,
+        comment: '资源状态',
+        default: ResourceStatus.APPROVED,
     })
-    status:ResourceType;
+    status: ResourceStatus;
 }
