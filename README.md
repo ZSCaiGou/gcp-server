@@ -1,4 +1,4 @@
-### 遇到的问题
-- 全局守卫的顺序、守卫往req对象添加属性的问题
-- jwt的时效问题
-- manager获取数据的异步与同步问题
+### GCP-SERVER 游戏社区平台的后端服务器
+- 项目采用Nest.js + TypeScript进行开发
+- 采用TypeORM作为ORM框架，数据库采用MySQL，使用了redis
+- 项目开发时Node.js的版本22.14.0
